@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Chekea — Plataforma inteligente de Chatbot IA, APIs automatizadas y pasarela Pago Móvil Mercantil Venezuela. Planes Estándar, Pro y Gold." />
+  <title>Chekea — Chatbot IA, APIs Automatizadas y Pasarela de Pago</title>
+
+  <!-- Tipografía moderna estilo Apple (fallback directo a SF Pro Display / system-ui) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ======================================================================
+       BARRA DE NAVEGACIÓN FIJA (ESTILO APPLE FROSTED GLASS)
+  ======================================================================= -->
+  <header class="navbar" id="navbar">
+    <div class="container navbar__inner">
+      <a href="#inicio" class="brand" aria-label="Chekea Inicio">
+        <span class="brand__mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="2" width="20" height="20" rx="6" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M8 12.5L10.8 15.3L16.5 9.2" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand__name">Chekea</span>
+      </a>
+
+      <nav class="nav-links" aria-label="Navegación principal">
+        <a href="#explorar">Explorar</a>
+        <a href="#chatbot">Portal Bot &amp; API</a>
+        <a href="#planes">Planes</a>
+        <a href="#api-studio">API Studio</a>
+        <a href="#fundadores">Fundadores</a>
+      </nav>
+
+      <div class="navbar__actions">
+        <button type="button" class="btn btn--ghost btn--sm" id="navAccessBtn">
+          Ya tengo API Key
+        </button>
+        <button type="button" class="btn btn--primary btn--sm" data-open-payment="pro">
+          Contratar
+        </button>
+        <button type="button" class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Menú móvil desplegable -->
+    <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+      <nav class="mobile-menu__links">
+        <a href="#explorar">Explorar</a>
+        <a href="#chatbot">Portal Bot &amp; API</a>
+        <a href="#planes">Planes Estándar, Pro y Gold</a>
+        <a href="#api-studio">Configurar &amp; Subir API</a>
+        <a href="#fundadores">Equipo Fundador</a>
+      </nav>
+      <div class="mobile-menu__actions">
+        <button type="button" class="btn btn--primary btn--full" data-open-payment="pro">Pagar y Desbloquear Bot + API</button>
+        <button type="button" class="btn btn--secondary btn--full" id="mobileAccessBtn">Ingresar con mi API Key</button>
+        <button type="button" class="btn btn--whatsapp btn--full" data-open-whatsapp>Contactar por WhatsApp</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Cinta informativa estilo Apple Ribbon -->
+  <div class="ribbon">
+    <div class="container ribbon__inner">
+      <p>
+        Pasarela <strong>Pago Móvil Mercantil (0105)</strong> activa en Venezuela. Recibe tu <strong>API Key al instante</strong> al confirmar tu plan.
+        <a href="#planes" class="ribbon__link">Ver planes Estándar, Pro y Gold ›</a>
+      </p>
+    </div>
+  </div>
+
+  <main>
+    <!-- ====================================================================
+         HERO SHOWCASE (INSPIRADO EN APPLE IPHONE PRO LAUNCH)
+    ===================================================================== -->
+    <section class="hero" id="inicio">
+      <div class="container hero__content">
+        <div class="eyebrow reveal">
+          <span class="eyebrow__dot"></span>
+          Chekea Intelligence · Nueva Generación 2026
+        </div>
+
+        <h1 class="hero__title reveal">
+          Inteligencia que responde.<br />
+          <span class="text-gradient">APIs que escalan al instante.</span>
+        </h1>
+
+        <p class="hero__subtitle reveal">
+          Despliega un Chatbot IA de precisión empresarial, conecta tu propia API y automatiza la emisión de API Keys con pasarela Pago Móvil Venezuela integrada.
+        </p>
+
+        <div class="hero__cta reveal">
+          <button type="button" class="btn btn--primary btn--lg" data-open-payment="pro">
+            Empezar ahora
+          </button>
+          <a href="#chatbot" class="btn btn--glass btn--lg">
+            Probar Chatbot en vivo
+          </a>
+          <button type="button" class="btn btn--link-light" data-open-whatsapp>
+            Hablar por WhatsApp ›
+          </button>
+        </div>
+
+        <div class="hero__visual reveal">
+          <div class="hero__glow" aria-hidden="true"></div>
+          <div class="hero__media-frame">
+            <img
+              src="assets/hero-showcase.jpg"
+              alt="Plataforma Chekea de Chatbot IA y generación automática de APIs"
+              class="hero__img"
+              id="heroImage"
+            />
+            <!-- Chips flotantes de telemetría -->
+            <div class="float-chip float-chip--tl">
+              <span class="status-dot status-dot--green"></span>
+              <div>
+                <strong>API Gateway Activo</strong>
+                <span>Latencia media 42 ms</span>
+              </div>
+            </div>
+            <div class="float-chip float-chip--br">
+              <span class="chip-icon">⚡</span>
+              <div>
+                <strong>Emisión Instantánea</strong>
+                <span>Pago Móvil → API Key única</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         CONOCE CHEKEA — CARRUSEL DE TARJETAS ESTILO "CONOCE EL IPHONE"
+    ===================================================================== -->
+    <section class="section section--light" id="explorar">
+      <div class="container">
+        <div class="section-header section-header--split reveal">
+          <div>
+            <p class="section-kicker">Conoce Chekea</p>
+            <h2 class="section-title">Diseñado con precisión.<br />Listo para producir hoy.</h2>
+          </div>
+          <div class="carousel-controls" aria-label="Controles del carrusel">
+            <button type="button" class="icon-circle" id="carouselPrev" aria-label="Anterior">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" class="icon-circle" id="carouselNext" aria-label="Siguiente">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="showcase-track" id="showcaseTrack">
+        <article class="showcase-card showcase-card--dark reveal">
+          <div class="showcase-card__top">
+            <span class="card-kicker">Chatbot Conversacional</span>
+            <h3>Respuestas inteligentes en milisegundos.</h3>
+            <p>Atiende clientes, resuelve dudas técnicas y dispara flujos de negocio 24/7 conectado a tu propia API.</p>
+          </div>
+          <div class="showcase-card__visual showcase-card__visual--code">
+            <div class="mini-chat-preview">
+              <div class="mini-bubble mini-bubble--user">¿Cómo obtengo mi API Key del Plan Pro?</div>
+              <div class="mini-bubble mini-bubble--bot">Completa tu Pago Móvil Mercantil y la genero al instante con cuota de 150,000 req/mes.</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="showcase-card showcase-card--blue reveal">
+          <div class="showcase-card__top">
+            <span class="card-kicker">Pasarela Venezuela</span>
+            <h3>Pago Móvil Mercantil sin fricción.</h3>
+            <p>Copia C.I. 31091406, Banco 0105 y teléfono 0424-6003606 con un toque, reporta tu referencia y activa tu cuenta.</p>
+          </div>
+          <div class="showcase-card__visual">
+            <div class="payment-pill-stack">
+              <div class="glass-row"><span>Banco</span><strong>Mercantil (0105)</strong></div>
+              <div class="glass-row"><span>Cédula</span><strong>V-31.091.406</strong></div>
+              <div class="glass-row"><span>Teléfono</span><strong>0424-6003606</strong></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="showcase-card showcase-card--light-border reveal">
+          <div class="showcase-card__top">
+            <span class="card-kicker">Provisión Automática</span>
+            <h3>Cada pago genera una API Key única.</h3>
+            <p>Llaves criptográficas firmadas con prefijo por plan (Estándar, Pro o Gold) listas para consumo inmediato.</p>
+          </div>
+          <div class="showcase-card__visual">
+            <div class="key-preview-box">
+              <span class="key-badge">PRO · ACTIVA</span>
+              <code>chk_live_pro_9f8a7c2e41b0...</code>
+            </div>
+          </div>
+        </article>
+
+        <article class="showcase-card showcase-card--graphite reveal">
+          <div class="showcase-card__top">
+            <span class="card-kicker">Sube tu propia API</span>
+            <h3>Conecta tu backend o carga un JSON OpenAPI.</h3>
+            <p>Configura tu Endpoint Base, Webhook de provisión y prueba en vivo desde el panel API Studio integrado.</p>
+          </div>
+          <div class="showcase-card__visual">
+            <div class="endpoint-stack">
+              <div><span class="method method--post">POST</span> <code>/chatbot/completions</code></div>
+              <div><span class="method method--post">POST</span> <code>/keys/provision</code></div>
+              <div><span class="method method--get">GET</span> <code>/keys/verify</code></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         PORTAL DE ACCESO AL BOT Y API (DESBLOQUEADO AUTOMÁTICAMENTE AL PAGAR)
+    ===================================================================== -->
+    <section class="section section--tinted" id="chatbot">
+      <div class="container">
+        <div class="section-header section-header--center reveal">
+          <p class="section-kicker">Acceso Bot Comercial + API SaaS</p>
+          <h2 class="section-title">Paga tu plan y desbloquea el Bot<br />y tu API al instante.</h2>
+          <p class="section-lead">
+            Conectado directamente a <strong>standalone-chatbot-api.ts</strong> (<code>/api/v1/chatbot/*</code>) y <strong>client-sales-bot.ts</strong> (WhatsApp QR, pedidos y PDF de cierre semanal).
+          </p>
+        </div>
+
+        <!-- Barra de estado de acceso del cliente -->
+        <div class="access-status-bar reveal" id="accessStatusBar">
+          <div class="access-status-bar__left">
+            <span class="access-pill access-pill--locked" id="accessStatusPill">🔒 Acceso Bloqueado — Requiere Plan Activo</span>
+            <p id="accessStatusMeta">Completa tu Pago Móvil Mercantil para recibir tu <code>X-API-Key</code>, activar el Chatbot API y conectar tu Bot Comercial de WhatsApp.</p>
+          </div>
+          <div class="access-status-bar__actions">
+            <button type="button" class="btn btn--secondary btn--sm" id="openUnlockModalBtn">Ya tengo mi API Key</button>
+            <button type="button" class="btn btn--primary btn--sm" id="accessPrimaryCta" data-open-payment="pro">Pagar y Desbloquear</button>
+            <button type="button" class="btn btn--ghost-dark btn--sm" id="logoutAccessBtn" hidden>Cerrar sesión</button>
+          </div>
+        </div>
+
+        <!-- PORTAL DESBLOQUEADO: Credenciales reales + Control del Bot Comercial (oculto hasta pagar o ingresar key) -->
+        <div class="unlocked-portal" id="unlockedPortal" hidden>
+          <div class="portal-card">
+            <div class="portal-card__head">
+              <div>
+                <span class="card-kicker">1. Acceso a tu API SaaS (standalone-chatbot-api.ts)</span>
+                <h3 id="portalClientTitle">Credenciales Activas</h3>
+              </div>
+              <span class="verified-chip" id="portalPlanBadge">PLAN PRO</span>
+            </div>
+
+            <div class="portal-creds">
+              <div class="cred-row">
+                <span>X-API-Key asignada</span>
+                <div class="cred-row__val">
+                  <code id="portalApiKeyText">sk_live_...</code>
+                  <button type="button" class="btn btn--secondary btn--xs" id="portalCopyKeyBtn">Copiar</button>
+                </div>
+              </div>
+              <div class="cred-row">
+                <span>Tenant ID / Rubro</span>
+                <div class="cred-row__val">
+                  <code id="portalTenantMeta">—</code>
+                </div>
+              </div>
+              <div class="cred-row">
+                <span>Endpoint Chatbot API</span>
+                <div class="cred-row__val">
+                  <code id="portalChatEndpointText">POST http://localhost:3000/api/v1/chatbot/message</code>
+                </div>
+              </div>
+              <div class="cred-row">
+                <span>Endpoint Stock / Inventario</span>
+                <div class="cred-row__val">
+                  <code id="portalStockEndpointText">POST http://localhost:3000/api/v1/stock/import</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="portal-card__footer">
+              <button type="button" class="btn btn--primary btn--sm" id="downloadClientEnvBtn">Descargar .env.client-bot</button>
+              <button type="button" class="btn btn--secondary btn--sm" id="loadConversationsBtn">Ver conversaciones API</button>
+            </div>
+            <div class="portal-convs" id="portalConversationsBox" hidden></div>
+          </div>
+
+          <div class="portal-card">
+            <div class="portal-card__head">
+              <div>
+                <span class="card-kicker">2. Bot Comercial WhatsApp (client-sales-bot.ts)</span>
+                <h3 id="botServiceTitle">Panel del Bot Comercial</h3>
+              </div>
+              <span class="status-pill status-pill--active" id="botLiveStatusPill">Verificando...</span>
+            </div>
+
+            <div class="bot-live-grid">
+              <div class="bot-live-info">
+                <p id="botLiveDesc">Sincroniza con tu instancia de <code>client-sales-bot.ts</code> para vincular WhatsApp, encender/apagar el bot y descargar tu Cierre Semanal en PDF.</p>
+                <div class="bot-kpis" id="botWeeklyKpis">
+                  <div><strong id="kpiWeeklySold">$0.00</strong><span>Vendido semana</span></div>
+                  <div><strong id="kpiWeeklyPaid">0</strong><span>Pagados</span></div>
+                  <div><strong id="kpiWeeklyPending">0</strong><span>Pendientes</span></div>
+                </div>
+                <div class="portal-card__footer">
+                  <button type="button" class="btn btn--primary btn--sm" id="refreshBotStateBtn">Sincronizar Bot</button>
+                  <button type="button" class="btn btn--secondary btn--sm" id="toggleClientBotBtn">Encender / Apagar</button>
+                  <button type="button" class="btn btn--secondary btn--sm" id="downloadWeeklyPdfBtn">PDF Cierre Semanal</button>
+                  <a href="http://localhost:3001/qr" target="_blank" rel="noopener noreferrer" class="btn btn--whatsapp btn--sm" id="openBotPanelLink">Abrir Panel QR ›</a>
+                </div>
+              </div>
+              <div class="bot-qr-box" id="botQrBox">
+                <img id="botQrImg" src="" alt="Código QR WhatsApp del Bot" hidden />
+                <div class="bot-qr-placeholder" id="botQrPlaceholder">
+                  <strong>WhatsApp QR</strong>
+                  <span>Pulsa "Sincronizar Bot" con <code>client-sales-bot.ts</code> activo para ver el QR aquí.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-chatbot">
+          <!-- Panel visual izquierdo -->
+          <div class="bento-visual-card reveal">
+            <img
+              src="assets/ai-architecture.jpg"
+              alt="Arquitectura neuronal del Chatbot IA Chekea"
+              class="bento-visual-card__img"
+              id="aiArchitectureImage"
+            />
+            <div class="bento-visual-card__overlay">
+              <span class="badge-pill">Standalone API + Client Sales Bot</span>
+              <h3>Doble motor conectado tras tu pago</h3>
+              <p>Al aprobarse tu Pago Móvil, creamos tu Tenant vía <code>POST /api/v1/chatbot/api-keys/generate</code> y habilitamos tu acceso al Bot Comercial (<code>/api/chat</code>, QR WhatsApp y PDF semanal).</p>
+              <div class="metrics-mini">
+                <div>
+                  <strong>X-API-Key</strong>
+                  <span>sk_live_ automática</span>
+                </div>
+                <div>
+                  <strong>Base64</strong>
+                  <span>Récipes y pagos</span>
+                </div>
+                <div>
+                  <strong>PDF</strong>
+                  <span>Cierre semanal</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel interactivo derecho: Chatbot embebido conectado a ambos backends -->
+          <div class="chat-panel reveal" aria-label="Consola interactiva del Chatbot Chekea">
+            <div class="chat-panel__header">
+              <div class="chat-agent">
+                <div class="chat-agent__avatar">IA</div>
+                <div>
+                  <strong>Chekea Bot Console</strong>
+                  <span class="chat-agent__status" id="chatConnectionBadge">
+                    <span class="status-dot status-dot--green"></span>
+                    Vista previa (Paga para modo API/Bot real)
+                  </span>
+                </div>
+              </div>
+              <div class="chat-header-controls">
+                <select id="chatEngineSelect" class="chat-engine-select" aria-label="Motor del Chatbot" disabled>
+                  <option value="standalone_api">API SaaS (:3000)</option>
+                  <option value="client_bot">Bot Comercial (:3001)</option>
+                </select>
+                <button type="button" class="btn btn--ghost-dark btn--xs" id="clearChatBtn">Limpiar</button>
+              </div>
+            </div>
+
+            <div class="chat-panel__messages" id="embeddedChatMessages" role="log" aria-live="polite"></div>
+
+            <!-- Capa de bloqueo parcial si no ha pagado (permite ver info, pero invita a desbloquear bot real) -->
+            <div class="chat-lock-banner" id="chatLockBanner">
+              <span>🔒 Estás en modo consulta comercial. <strong>Paga un plan</strong> para conversar directo con el Bot y tu API real.</span>
+              <button type="button" class="btn btn--primary btn--xs" data-open-payment="pro">Desbloquear</button>
+            </div>
+
+            <div class="chat-quick-prompts" id="chatQuickPrompts">
+              <button type="button" class="prompt-chip" data-prompt="catálogo">Ver catálogo</button>
+              <button type="button" class="prompt-chip" data-prompt="¿Qué incluye cada plan Estándar, Pro y Gold?">Planes y precios</button>
+              <button type="button" class="prompt-chip" data-prompt="Dame los datos de Pago Móvil Mercantil">Datos Pago Móvil</button>
+              <button type="button" class="prompt-chip" data-prompt="cierre semanal">Cierre semanal PDF</button>
+            </div>
+
+            <form class="chat-panel__form" id="embeddedChatForm">
+              <input type="file" id="chatImageInput" accept="image/*" hidden />
+              <button type="button" class="btn btn--secondary btn--icon" id="chatAttachImageBtn" title="Adjuntar foto de récipe o comprobante (Base64)" aria-label="Adjuntar imagen">
+                📎
+              </button>
+              <input
+                type="text"
+                id="embeddedChatInput"
+                class="chat-input"
+                placeholder="Escribe un mensaje para el bot o consulta planes..."
+                autocomplete="off"
+              />
+              <button type="submit" class="btn btn--primary btn--icon" aria-label="Enviar mensaje">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </form>
+            <div class="chat-attachment-bar" id="chatAttachmentBar" hidden>
+              <span id="chatAttachmentName">Imagen adjunta</span>
+              <button type="button" class="btn btn--ghost-dark btn--xs" id="clearChatAttachmentBtn">Quitar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         PLANES ESTÁNDAR, PRO Y GOLD (ESTILO LÍNEA DE COMPARACIÓN APPLE)
+    ===================================================================== -->
+    <section class="section section--light" id="planes">
+      <div class="container">
+        <div class="section-header section-header--center reveal">
+          <p class="section-kicker">Planes Chekea</p>
+          <h2 class="section-title">Elige el poder ideal para tu proyecto.</h2>
+          <p class="section-lead">
+            Todos los planes incluyen pasarela Pago Móvil Mercantil y generación automática de API Key al confirmar tu pago.
+          </p>
+
+          <!-- Selector Mensual / Anual + Tasa BCV -->
+          <div class="billing-bar">
+            <div class="segmented-control" role="group" aria-label="Frecuencia de facturación">
+              <button type="button" class="segmented-control__btn is-active" data-billing="monthly">Mensual</button>
+              <button type="button" class="segmented-control__btn" data-billing="annual">
+                Anual <span class="save-tag">-20%</span>
+              </button>
+            </div>
+            <div class="rate-pill" title="Puedes ajustar la tasa en config.js o en API Studio">
+              Tasa ref.: <strong id="displayExchangeRate">52,50 Bs/USD</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjetas generadas dinámicamente desde config.js para edición sencilla -->
+        <div class="plans-grid" id="plansGrid"></div>
+
+        <!-- Tabla comparativa compacta estilo Apple Specs -->
+        <div class="specs-strip reveal">
+          <div class="spec-item">
+            <span class="spec-item__label">Pago Móvil Venezuela</span>
+            <strong>Banco Mercantil (0105)</strong>
+            <p>C.I. V-31.091.406 · Tlf. 0424-6003606</p>
+          </div>
+          <div class="spec-item">
+            <span class="spec-item__label">Emisión de API Key</span>
+            <strong>Automática al pagar</strong>
+            <p>Prefijo único por plan + Webhook configurable</p>
+          </div>
+          <div class="spec-item">
+            <span class="spec-item__label">Atención Directa</span>
+            <strong>WhatsApp Inmediato</strong>
+            <p>Acompañamiento real desde el primer mensaje</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         API STUDIO — SUBIR API, CONFIGURAR WEBHOOKS Y REGISTRO DE API KEYS
+    ===================================================================== -->
+    <section class="section section--dark" id="api-studio">
+      <div class="container">
+        <div class="section-header section-header--split reveal">
+          <div>
+            <p class="section-kicker section-kicker--light">Chekea API Studio</p>
+            <h2 class="section-title section-title--light">Sube tu propia API.<br />Automatiza cada llave por pago.</h2>
+            <p class="section-lead section-lead--light">
+              Configura tu endpoint backend, carga un archivo OpenAPI/JSON y administra en tiempo real todas las API Keys generadas automáticamente por la pasarela de pago.
+            </p>
+          </div>
+          <div class="studio-top-actions">
+            <button type="button" class="btn btn--glass" id="exportConfigBtn">
+              Descargar config.js
+            </button>
+            <button type="button" class="btn btn--primary" data-open-payment="pro">
+              Simular pago y generar API
+            </button>
+          </div>
+        </div>
+
+        <div class="studio-shell reveal">
+          <!-- Tabs del panel -->
+          <div class="studio-tabs" role="tablist" aria-label="Secciones de API Studio">
+            <button type="button" class="studio-tab is-active" role="tab" aria-selected="true" data-studio-tab="config">
+              1. Conectar API &amp; Webhook
+            </button>
+            <button type="button" class="studio-tab" role="tab" aria-selected="false" data-studio-tab="upload">
+              2. Subir Especificación (.json)
+            </button>
+            <button type="button" class="studio-tab" role="tab" aria-selected="false" data-studio-tab="keys">
+              3. API Keys Generadas <span class="tab-counter" id="keysCountBadge">0</span>
+            </button>
+            <button type="button" class="studio-tab" role="tab" aria-selected="false" data-studio-tab="snippets">
+              4. Código de Integración
+            </button>
+          </div>
+
+          <!-- TAB 1: Configuración de API y Webhook -->
+          <div class="studio-panel is-active" data-studio-panel="config">
+            <form id="apiConfigForm" class="studio-form">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="cfgBaseUrl">URL Base — Standalone Chatbot API (:3000)</label>
+                  <input type="url" id="cfgBaseUrl" placeholder="http://localhost:3000" required />
+                  <small>Servidor de <code>standalone-chatbot-api.ts</code> (local o Railway).</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgClientBotUrl">URL Base — Bot Comercial WhatsApp (:3001)</label>
+                  <input type="url" id="cfgClientBotUrl" placeholder="http://localhost:3001" />
+                  <small>Servidor de <code>client-sales-bot.ts</code> (QR, /api/chat y PDF semanal).</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgChatEndpoint">Endpoint del Chatbot API</label>
+                  <input type="text" id="cfgChatEndpoint" placeholder="/api/v1/chatbot/message" required />
+                  <small>Ruta POST de <code>ChatbotApiController::sendMessage</code>.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgProvisionEndpoint">Endpoint Generador de API Key (Al Pagar)</label>
+                  <input type="text" id="cfgProvisionEndpoint" placeholder="/api/v1/chatbot/api-keys/generate" required />
+                  <small>Crea el Tenant y devuelve <code>sk_live_...</code> automáticamente tras el pago.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgMode">Modo de Provisión</label>
+                  <select id="cfgMode">
+                    <option value="local_plus_webhook">Híbrido (Llama a tu API real; si está apagada usa respaldo local)</option>
+                    <option value="remote_only">Remoto estricto (Exige respuesta 201 real de tu servidor)</option>
+                  </select>
+                  <small>En producción con Railway/VPS puedes activar modo remoto estricto.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgAuthHeader">Cabecera de Autenticación API</label>
+                  <input type="text" id="cfgAuthHeader" placeholder="X-API-Key" />
+                  <small><code>X-API-Key</code> (recomendada) o <code>Authorization</code>.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgMasterToken">API Key Maestra Admin (para crear clientes)</label>
+                  <input type="password" id="cfgMasterToken" placeholder="sk_live_admin_••••••••••••" />
+                  <small>Requerida por <code>authenticate</code> en <code>/api/v1/chatbot/api-keys/generate</code>.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgBotPanelToken">CLIENT_PANEL_TOKEN (Bot Comercial :3001)</label>
+                  <input type="password" id="cfgBotPanelToken" placeholder="Token opcional del panel /api/*" />
+                  <small>Se envía en cabecera <code>X-Panel-Token</code> hacia <code>client-sales-bot.ts</code>.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgKeyPrefix">Prefijo de Respaldo Local</label>
+                  <input type="text" id="cfgKeyPrefix" placeholder="sk_live_" />
+                  <small>Solo usado si el servidor backend no está encendido al probar.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgExchangeRate">Tasa BCV Referencial (Bs / USD)</label>
+                  <input type="number" id="cfgExchangeRate" step="0.01" min="1" placeholder="52.50" />
+                  <small>Actualiza al instante el equivalente en Bolívares de los planes.</small>
+                </div>
+              </div>
+
+              <div class="studio-form__footer">
+                <label class="switch-label">
+                  <input type="checkbox" id="cfgAutoGenerate" checked />
+                  <span>Generar automáticamente una API Key única tras cada pago confirmado</span>
+                </label>
+                <div class="studio-form__btns">
+                  <button type="button" class="btn btn--glass" id="testApiConnectionBtn">Probar conexión</button>
+                  <button type="submit" class="btn btn--primary">Guardar configuración</button>
+                </div>
+              </div>
+              <div class="api-test-output" id="apiTestOutput" hidden></div>
+            </form>
+          </div>
+
+          <!-- TAB 2: Subir Especificación API (.json / OpenAPI) -->
+          <div class="studio-panel" data-studio-panel="upload">
+            <div class="upload-layout">
+              <div class="dropzone" id="apiDropzone">
+                <input type="file" id="apiSpecFileInput" accept=".json,application/json" hidden />
+                <div class="dropzone__icon" aria-hidden="true">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <h3>Arrastra tu archivo OpenAPI / Swagger JSON aquí</h3>
+                <p>O selecciona un archivo <code>.json</code> desde tu equipo para montar tus endpoints en la plataforma.</p>
+                <button type="button" class="btn btn--primary btn--sm" id="browseSpecBtn">Seleccionar archivo JSON</button>
+              </div>
+
+              <div class="spec-preview">
+                <div class="spec-preview__head">
+                  <div>
+                    <span class="card-kicker">API Cargada Actualmente</span>
+                    <h4 id="loadedSpecTitle">Chekea AI &amp; Payments API</h4>
+                  </div>
+                  <span class="spec-file-pill" id="loadedSpecFilename">chekea-core-v1.json</span>
+                </div>
+                <p class="spec-preview__desc" id="loadedSpecDesc"></p>
+                <div class="spec-endpoints" id="loadedSpecEndpoints"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Llaves API Generadas por Pago -->
+          <div class="studio-panel" data-studio-panel="keys">
+            <div class="keys-toolbar">
+              <div>
+                <h4>Registro de API Keys emitidas por pago</h4>
+                <p>Cada transacción validada en la pasarela genera automáticamente su registro y llave.</p>
+              </div>
+              <div class="keys-toolbar__actions">
+                <button type="button" class="btn btn--glass btn--sm" id="exportKeysJsonBtn">Exportar JSON</button>
+                <button type="button" class="btn btn--primary btn--sm" id="manualGenerateKeyBtn">+ Generar Key de prueba</button>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="keys-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Plan</th>
+                    <th>Ref. Mercantil</th>
+                    <th>API Key Generada</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="generatedKeysBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB 4: Código de Integración -->
+          <div class="studio-panel" data-studio-panel="snippets">
+            <div class="snippets-grid">
+              <div class="code-card">
+                <div class="code-card__head">
+                  <span>cURL — Consulta al Chatbot</span>
+                  <button type="button" class="btn btn--ghost btn--xs" data-copy-target="curlSnippet">Copiar</button>
+                </div>
+                <pre><code id="curlSnippet"></code></pre>
+              </div>
+
+              <div class="code-card">
+                <div class="code-card__head">
+                  <span>JavaScript (fetch) — Consumo con API Key</span>
+                  <button type="button" class="btn btn--ghost btn--xs" data-copy-target="jsSnippet">Copiar</button>
+                </div>
+                <pre><code id="jsSnippet"></code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         EQUIPO FUNDADOR (TARJETAS EDITORIALES + POP-UP CON RESUMEN Y WHATSAPP)
+    ===================================================================== -->
+    <section class="section section--light" id="fundadores">
+      <div class="container">
+        <div class="section-header section-header--center reveal">
+          <p class="section-kicker">Liderazgo Chekea</p>
+          <h2 class="section-title">Las mentes detrás de la plataforma.</h2>
+          <p class="section-lead">
+            Haz clic en cada integrante para abrir su perfil detallado, conocer su rol en Chekea y contactarnos directamente por WhatsApp.
+          </p>
+        </div>
+
+        <!-- Renderizado dinámicamente desde config.js -->
+        <div class="founders-grid" id="foundersGrid"></div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         CTA FINAL
+    ===================================================================== -->
+    <section class="section section--cta">
+      <div class="container">
+        <div class="cta-banner reveal">
+          <p class="section-kicker section-kicker--light">Listo para comenzar</p>
+          <h2>Activa tu Chatbot y recibe tu API Key hoy mismo.</h2>
+          <p>Pago rápido en Venezuela vía Banco Mercantil (0105) y soporte directo con nuestro equipo por WhatsApp.</p>
+          <div class="cta-banner__actions">
+            <button type="button" class="btn btn--primary btn--lg" data-open-payment="pro">Ir a Pasarela de Pago</button>
+            <button type="button" class="btn btn--glass btn--lg" data-open-whatsapp>Contactar por WhatsApp</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======================================================================
+       FOOTER MINIMALISTA ESTILO APPLE
+  ======================================================================= -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <strong>Chekea</strong>
+          <p>Plataforma de Chatbot IA, emisión automática de APIs y pagos digitales en Venezuela.</p>
+        </div>
+        <div class="footer__cols">
+          <div>
+            <h4>Plataforma</h4>
+            <a href="#explorar">Explorar</a>
+            <a href="#chatbot">Chatbot IA</a>
+            <a href="#planes">Planes Estándar, Pro y Gold</a>
+            <a href="#api-studio">API Studio</a>
+          </div>
+          <div>
+            <h4>Fundadores</h4>
+            <a href="#fundadores" data-open-founder="fidel">Fidel Pereira — Fundador</a>
+            <a href="#fundadores" data-open-founder="jesus">Jesús Romero — CEO</a>
+            <a href="#fundadores" data-open-founder="jose">José Davalillo — Ing. Software</a>
+          </div>
+          <div>
+            <h4>Pago Móvil Venezuela</h4>
+            <span>Banco Mercantil (0105)</span>
+            <span>C.I.: V-31.091.406</span>
+            <span>Teléfono: 0424-6003606</span>
+            <button type="button" class="footer__link-btn" data-open-whatsapp>Escribir por WhatsApp ›</button>
+          </div>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>© <span id="footerYear">2026</span> Chekea Venezuela. Todos los derechos reservados.</p>
+        <p>Desarrollado con arquitectura modular HTML, CSS y JavaScript.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======================================================================
+       BOTONES FLOTANTES (WHATSAPP + CHATBOT RÁPIDO)
+  ======================================================================= -->
+  <div class="floating-dock" aria-label="Accesos rápidos">
+    <button type="button" class="dock-btn dock-btn--whatsapp" data-open-whatsapp aria-label="Contactar por WhatsApp">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M20.52 3.48A11.86 11.86 0 0 0 12.05 0C5.5 0 .16 5.33.16 11.9c0 2.1.55 4.14 1.6 5.95L0 24l6.33-1.66a11.87 11.87 0 0 0 5.71 1.46h.01c6.55 0 11.89-5.34 11.89-11.9 0-3.18-1.24-6.17-3.42-8.42ZM12.05 21.8h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.76.98 1-3.66-.24-.38a9.86 9.86 0 0 1-1.51-5.25c0-5.45 4.44-9.89 9.91-9.89 2.65 0 5.13 1.03 7 2.9a9.84 9.84 0 0 1 2.9 7c0 5.46-4.45 9.89-9.9 9.89Zm5.43-7.41c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.65-2.05-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.42.25-.7.25-1.29.17-1.42-.07-.12-.27-.2-.57-.35Z"/>
+      </svg>
+      <span>WhatsApp</span>
+    </button>
+
+    <button type="button" class="dock-btn dock-btn--chat" id="floatingChatToggle" aria-label="Abrir Chatbot IA">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </button>
+  </div>
+
+  <!-- Ventana flotante del Chatbot -->
+  <aside class="floating-chat" id="floatingChatDrawer" aria-hidden="true">
+    <div class="chat-panel__header">
+      <div class="chat-agent">
+        <div class="chat-agent__avatar">IA</div>
+        <div>
+          <strong>Chekea Assistant</strong>
+          <span class="chat-agent__status"><span class="status-dot status-dot--green"></span>En línea ahora</span>
+        </div>
+      </div>
+      <button type="button" class="modal-close modal-close--sm" id="floatingChatClose" aria-label="Cerrar chat">×</button>
+    </div>
+    <div class="chat-panel__messages" id="floatingChatMessages"></div>
+    <form class="chat-panel__form" id="floatingChatForm">
+      <input type="text" id="floatingChatInput" class="chat-input" placeholder="Pregunta algo..." autocomplete="off" required />
+      <button type="submit" class="btn btn--primary btn--icon" aria-label="Enviar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </form>
+  </aside>
+
+  <!-- ======================================================================
+       MODAL 1: PASARELA DE PAGO MÓVIL MERCANTIL + EMISIÓN DE API KEY
+  ======================================================================= -->
+  <div class="modal-backdrop" id="paymentModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+    <div class="modal modal--wide">
+      <button type="button" class="modal-close" data-close-modal aria-label="Cerrar pasarela">×</button>
+
+      <!-- Paso 1: Formulario Pago Móvil -->
+      <div id="paymentStepForm">
+        <div class="modal__header">
+          <span class="modal-kicker">Pasarela Oficial Venezuela · Pago Móvil</span>
+          <h3 id="paymentModalTitle">Completa tu pago y recibe tu API Key</h3>
+          <p>Realiza el Pago Móvil a nuestra cuenta Banco Mercantil y registra tu referencia para generar tu API Key al instante.</p>
+        </div>
+
+        <div class="checkout-grid">
+          <!-- Columna izquierda: Datos Mercantil -->
+          <div class="mercantil-card">
+            <div class="mercantil-card__brand">
+              <div>
+                <span class="bank-tag">VENEZUELA · PAGO MÓVIL</span>
+                <h4>Banco Mercantil (0105)</h4>
+              </div>
+              <span class="verified-chip">Verificado</span>
+            </div>
+
+            <div class="copy-list">
+              <div class="copy-item">
+                <div>
+                  <span>Banco</span>
+                  <strong>0105 · Mercantil</strong>
+                </div>
+                <button type="button" class="copy-btn" data-copy-text="0105">Copiar</button>
+              </div>
+              <div class="copy-item">
+                <div>
+                  <span>Cédula de Identidad</span>
+                  <strong id="pmCedulaText">V-31.091.406</strong>
+                </div>
+                <button type="button" class="copy-btn" data-copy-text="31091406">Copiar</button>
+              </div>
+              <div class="copy-item">
+                <div>
+                  <span>Teléfono Pago Móvil</span>
+                  <strong id="pmPhoneText">0424-6003606</strong>
+                </div>
+                <button type="button" class="copy-btn" data-copy-text="04246003606">Copiar</button>
+              </div>
+              <div class="copy-item copy-item--highlight">
+                <div>
+                  <span>Monto a transferir</span>
+                  <strong id="pmAmountSummary">$49 USD · Bs. 2.572,50</strong>
+                </div>
+                <button type="button" class="copy-btn" id="copyBsAmountBtn">Copiar Bs</button>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn--glass btn--full btn--sm" id="copyAllPaymentBtn">
+              Copiar todos los datos de Pago Móvil
+            </button>
+
+            <div class="mercantil-card__note">
+              <strong>Titular:</strong> José Davalillo · País: Venezuela.<br />
+              Al confirmar, el sistema generará una API Key vinculada al plan seleccionado y disparará tu webhook configurado.
+            </div>
+          </div>
+
+          <!-- Columna derecha: Datos del cliente & referencia -->
+          <form id="paymentCheckoutForm" class="checkout-form">
+            <div class="form-row-2">
+              <div class="field-light">
+                <label for="payPlanSelect">Plan seleccionado</label>
+                <select id="payPlanSelect" required>
+                  <option value="estandar">Plan Estándar</option>
+                  <option value="pro" selected>Plan Pro (Más popular)</option>
+                  <option value="gold">Plan Gold (Empresarial)</option>
+                </select>
+              </div>
+              <div class="field-light">
+                <label for="payBusinessType">Rubro del negocio</label>
+                <select id="payBusinessType" required>
+                  <option value="RETAIL">Comercio / Retail</option>
+                  <option value="PHARMACY">Farmacia / Salud</option>
+                  <option value="TECH">Tecnología / Electrónica</option>
+                  <option value="HARDWARE">Ferretería / Repuestos</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="field-light">
+                <label for="payCustomerName">Nombre / Negocio</label>
+                <input type="text" id="payCustomerName" placeholder="Ej. Farmacia Central o Carlos Mendoza" required />
+              </div>
+              <div class="field-light">
+                <label for="payCustomerEmail">Correo electrónico</label>
+                <input type="email" id="payCustomerEmail" placeholder="tu@correo.com" required />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="field-light">
+                <label for="payOriginBank">Banco de origen</label>
+                <select id="payOriginBank" required>
+                  <option value="Mercantil (0105)">Mercantil (0105)</option>
+                  <option value="Banco de Venezuela (0102)">Banco de Venezuela (0102)</option>
+                  <option value="Banesco (0134)">Banesco (0134)</option>
+                  <option value="BBVA Provincial (0108)">BBVA Provincial (0108)</option>
+                  <option value="BNC (0191)">BNC (0191)</option>
+                  <option value="Bancamiga (0172)">Bancamiga (0172)</option>
+                  <option value="Otro Banco Nacional">Otro Banco Nacional</option>
+                </select>
+              </div>
+              <div class="field-light">
+                <label for="payCustomerPhone">Tu teléfono WhatsApp / emisor</label>
+                <input type="tel" id="payCustomerPhone" placeholder="04141234567" required />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="field-light">
+                <label for="payReference">Número de Referencia (últimos 6-8 dígitos)</label>
+                <input type="text" id="payReference" placeholder="Ej. 849201" minlength="4" maxlength="16" required />
+              </div>
+              <div class="field-light">
+                <label for="payDate">Fecha del pago</label>
+                <input type="date" id="payDate" required />
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--full btn--lg" id="confirmPaymentBtn">
+              Confirmar Pago y Desbloquear Bot + API
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Paso 2: Éxito + API Key Generada -->
+      <div id="paymentStepSuccess" class="payment-success" hidden>
+        <div class="success-icon" aria-hidden="true">✓</div>
+        <span class="modal-kicker">Pago Registrado · Provisión Completada</span>
+        <h3>¡Tu API Key está lista para usar!</h3>
+        <p id="successPlanDesc">Plan Pro activado correctamente. Guarda esta llave en un lugar seguro.</p>
+
+        <div class="generated-key-box">
+          <span class="generated-key-box__label">TU NUEVA API KEY</span>
+          <div class="generated-key-box__row">
+            <code id="freshApiKeyValue">chk_live_pro_...</code>
+            <button type="button" class="btn btn--primary btn--sm" id="copyFreshKeyBtn">Copiar Key</button>
+          </div>
+          <small id="freshWebhookStatus">Registrada en API Studio y lista para peticiones.</small>
+        </div>
+
+        <div class="payment-success__actions">
+          <button type="button" class="btn btn--primary btn--lg" id="openUnlockedPortalBtn">
+            Ir ahora al Bot y mi API ›
+          </button>
+          <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn--whatsapp btn--lg" id="sendReceiptWhatsappBtn">
+            Enviar comprobante WhatsApp
+          </a>
+          <button type="button" class="btn btn--secondary btn--lg" id="goToStudioKeysBtn">
+            Ver en API Studio
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 2: POP-UP DE FUNDADORES (RESUMEN DE ROL + CONTACTO WHATSAPP)
+  ======================================================================= -->
+  <div class="modal-backdrop" id="founderModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="founderModalName">
+    <div class="modal modal--founder">
+      <button type="button" class="modal-close" data-close-modal aria-label="Cerrar perfil">×</button>
+      <div class="founder-modal__grid">
+        <div class="founder-modal__photo-wrap">
+          <img id="founderModalImg" src="" alt="" class="founder-modal__photo" />
+        </div>
+        <div class="founder-modal__body">
+          <span class="modal-kicker" id="founderModalRole">Rol</span>
+          <h3 id="founderModalName">Nombre</h3>
+          <p class="founder-modal__summary" id="founderModalSummary"></p>
+          <p class="founder-modal__bio" id="founderModalBio"></p>
+          <div class="founder-modal__tags" id="founderModalTags"></div>
+          <div class="founder-modal__actions">
+            <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn--whatsapp btn--full" id="founderWhatsappBtn">
+              Contactar por WhatsApp (0424-6003606)
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 3: POP-UP DE CONTACTO DIRECTO POR WHATSAPP (0424-6003606)
+  ======================================================================= -->
+  <div class="modal-backdrop" id="whatsappModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="whatsappModalTitle">
+    <div class="modal modal--compact">
+      <button type="button" class="modal-close" data-close-modal aria-label="Cerrar contacto WhatsApp">×</button>
+      <div class="wa-header">
+        <div class="wa-badge-icon" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.52 3.48A11.86 11.86 0 0 0 12.05 0C5.5 0 .16 5.33.16 11.9c0 2.1.55 4.14 1.6 5.95L0 24l6.33-1.66a11.87 11.87 0 0 0 5.71 1.46h.01c6.55 0 11.89-5.34 11.89-11.9 0-3.18-1.24-6.17-3.42-8.42ZM12.05 21.8h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.76.98 1-3.66-.24-.38a9.86 9.86 0 0 1-1.51-5.25c0-5.45 4.44-9.89 9.91-9.89 2.65 0 5.13 1.03 7 2.9a9.84 9.84 0 0 1 2.9 7c0 5.46-4.45 9.89-9.9 9.89Zm5.43-7.41c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.65-2.05-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.42.25-.7.25-1.29.17-1.42-.07-.12-.27-.2-.57-.35Z"/>
+          </svg>
+        </div>
+        <span class="modal-kicker">Atención Directa Venezuela</span>
+        <h3 id="whatsappModalTitle">Contáctanos por WhatsApp</h3>
+        <p>Escríbenos directamente al <strong>0424-6003606</strong> para activar tu plan, integrar tu API o hablar con nuestros fundadores.</p>
+      </div>
+
+      <div class="wa-topics" id="waTopics">
+        <button type="button" class="wa-topic is-active" data-wa-msg="Hola equipo Chekea, quiero contratar uno de sus planes (Estándar, Pro o Gold).">Contratar un Plan</button>
+        <button type="button" class="wa-topic" data-wa-msg="Hola José Davalillo, necesito asesoría técnica para subir mi API en Chekea.">Asesoría Técnica / API</button>
+        <button type="button" class="wa-topic" data-wa-msg="Hola Chekea, ya realicé mi Pago Móvil a Banco Mercantil (0424-6003606) y quiero validar mi referencia.">Enviar Comprobante Pago Móvil</button>
+        <button type="button" class="wa-topic" data-wa-msg="Hola equipo Chekea, me gustaría agendar una demostración del Chatbot IA.">Solicitar Demo Chatbot</button>
+      </div>
+
+      <form id="whatsappDirectForm" class="wa-form">
+        <div class="field-light">
+          <label for="waCustomMessage">Tu mensaje</label>
+          <textarea id="waCustomMessage" rows="3" required>Hola equipo Chekea, quiero contratar uno de sus planes (Estándar, Pro o Gold).</textarea>
+        </div>
+        <button type="submit" class="btn btn--whatsapp btn--full btn--lg">
+          Abrir chat en WhatsApp (0424-6003606)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 4: ACCESO CON API KEY EXISTENTE (DESBLOQUEO DIRECTO)
+  ======================================================================= -->
+  <div class="modal-backdrop" id="unlockAccessModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="unlockAccessTitle">
+    <div class="modal modal--compact">
+      <button type="button" class="modal-close" data-close-modal aria-label="Cerrar acceso">×</button>
+      <div class="modal__header">
+        <span class="modal-kicker">Acceso Clientes Chekea</span>
+        <h3 id="unlockAccessTitle">Desbloquea tu Bot y API</h3>
+        <p>Si ya pagaste tu plan o recibiste una llave <code>sk_live_...</code>, ingrésala aquí para habilitar la consola del Bot y tu API.</p>
+      </div>
+      <form id="unlockAccessForm" class="wa-form">
+        <div class="field-light">
+          <label for="unlockApiKeyInput">Tu API Key (X-API-Key)</label>
+          <input type="text" id="unlockApiKeyInput" placeholder="sk_live_..." required />
+        </div>
+        <div class="form-row-2">
+          <div class="field-light">
+            <label for="unlockNameInput">Nombre o Negocio</label>
+            <input type="text" id="unlockNameInput" placeholder="Mi Negocio" required />
+          </div>
+          <div class="field-light">
+            <label for="unlockPlanInput">Plan</label>
+            <select id="unlockPlanInput">
+              <option value="ESTANDAR">Estándar</option>
+              <option value="PRO" selected>Pro</option>
+              <option value="GOLD">Gold</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn--primary btn--full btn--lg">Activar acceso al Bot y API</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast de notificaciones -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Scripts modulares (sin dependencias ni build tools) -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
