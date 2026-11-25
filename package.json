@@ -1,7 +1,7 @@
 {
-  "name": "ckekea-web-platform",
-  "version": "2.0.0",
-  "description": "Ckekea Web Platform + Multi-Tenant Client Dashboard (Neon PostgreSQL + Railway Bot Integration)",
+  "name": "ckekea-standalone-platform",
+  "version": "3.0.0",
+  "description": "Ckekea Standalone Platform: Web + Auth Neon PostgreSQL + Superadmin + Bank API + Built-in WhatsApp Bot (whatsapp-web.js)",
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
@@ -13,6 +13,8 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^8.5.1",
     "node-fetch": "^2.7.0",
-    "pg": "8.11.3"
+    "pg": "8.11.3",
+    "qrcode": "^1.5.3",
+    "whatsapp-web.js": "^1.25.0"
   }
 }

@@ -3,7 +3,7 @@
  * CKEKEA — LÓGICA DE LOGIN, REGISTRO Y DASHBOARD PRIVADO DE CLIENTE
  * ============================================================================
  * Conecta login.html y dashboard.html con server/server.js (Neon PostgreSQL)
- * y https://chatbot-apirest-production.up.railway.app/
+ * y el motor independiente de WhatsApp Bot embebido.
  */
 
 (function () {
@@ -287,9 +287,9 @@
         const d = res.data;
         renderBotPower(Boolean(d.botEnabled));
         document.getElementById("kpiWaStatus").textContent = d.waStatus || "READY";
-        document.getElementById("kpiRailwaySync").textContent = d.railwayOnline
-          ? "Railway en línea ✓"
-          : "Sincronizado con Neon DB";
+        document.getElementById("kpiRailwaySync").textContent = d.lastError
+          ? d.lastError.slice(0, 48)
+          : "Motor WhatsApp Independiente";
 
         const qrImg = document.getElementById("dashQrImg");
         const qrHolder = document.getElementById("dashQrPlaceholder");
@@ -395,17 +395,27 @@
         });
         currentClient.botEnabled = res.botEnabled;
         renderBotPower(res.botEnabled);
-        toast(
-          res.botEnabled
-            ? `Bot ENCENDIDO${res.railwaySynced ? " y sincronizado con Railway" : ""}`
-            : `Bot APAGADO${res.railwaySynced ? " y sincronizado con Railway" : ""}`
-        );
+        toast(res.botEnabled ? "Bot ENCENDIDO (motor independiente activo)" : "Bot APAGADO (en pausa)");
       } catch (err) {
         toast("Error cambiando estado del Bot: " + err.message);
       }
     });
 
     document.getElementById("dashRefreshBotBtn").addEventListener("click", () => loadBotLiveStatus(false));
+
+    const handleRestartWa = async () => {
+      toast("Reiniciando motor WhatsApp y generando QR...");
+      try {
+        await apiRequest("/api/bot/restart", { method: "POST", body: "{}" });
+        setTimeout(() => loadBotLiveStatus(false), 1800);
+      } catch (err) {
+        toast("Error reiniciando WhatsApp: " + err.message);
+      }
+    };
+    const restartBtn1 = document.getElementById("dashRestartBotBtn");
+    const restartBtn2 = document.getElementById("dashRestartWaInlineBtn");
+    if (restartBtn1) restartBtn1.addEventListener("click", handleRestartWa);
+    if (restartBtn2) restartBtn2.addEventListener("click", handleRestartWa);
 
     document.getElementById("dashCopyApiKeyBtn").addEventListener("click", () => {
       if (!currentClient) return;

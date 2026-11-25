@@ -38,11 +38,10 @@ window.CHEKEA_CONFIG = {
       "Hola Max de Ckekea, vengo desde la página web y quiero conocer los planes y ver una demo."
   },
 
-  // URL del servidor propio de Auth/Inventario (server/server.js)
-  // Cuando abres la web desde http://localhost:3000 o Railway, usa el mismo origen automáticamente.
+  // URL del servidor propio independiente (server/server.js en Railway o localhost)
+  // Cuando abres la web desde Railway o localhost, usa window.location.origin automáticamente.
   platform: {
-    apiBaseUrl: "http://localhost:3000",
-    railwayPanelUrl: "https://chatbot-apirest-production.up.railway.app"
+    apiBaseUrl: ""
   },
 
   // Datos oficiales de Pago Móvil (Venezuela - Banco Mercantil) y WhatsApp de soporte/pagos
@@ -229,8 +228,8 @@ window.CHEKEA_CONFIG = {
   apiStudio: {
     mode: "local_plus_webhook",
 
-    // 1) Backend principal desplegado en Railway (https://chatbot-apirest-production.up.railway.app)
-    baseUrl: "https://chatbot-apirest-production.up.railway.app",
+    // 1) API SaaS embebida en este mismo servidor (deja vacío para usar el mismo dominio de Railway)
+    baseUrl: "",
     chatEndpoint: "/api/v1/chatbot/message",
     provisionEndpoint: "/api/v1/chatbot/api-keys/generate",
     conversationsEndpoint: "/api/v1/chatbot/conversations",

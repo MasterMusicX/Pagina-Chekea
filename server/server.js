@@ -1,15 +1,14 @@
 /**
  * ============================================================================
- * CKEKEA — SERVIDOR BACKEND COMPLETO
+ * CKEKEA — SERVIDOR STANDALONE 100% INDEPENDIENTE (RAILWAY + NEON + WHATSAPP)
  * ============================================================================
- * - Login / Registro con confirmación de contraseña y hash scrypt + JWT
- * - Cambio de contraseña desde el panel de usuarios y superadmin
- * - Roles USER y SUPERADMIN (sembrado inicial: josemigueldav05@gmail.com)
- * - Panel Superadmin: crear usuarios/superusuarios, controlar planes/bots,
- *   rotar API Keys y analíticas de consumo de API y Chatbot por empresa
- * - Adaptador de API Bancaria listo para Mercantil / BDV / Banesco / BNC
- * - Gestor de inventario directo en Neon PostgreSQL (`products` + `stocks`)
- * - Sincronización en vivo con https://chatbot-apirest-production.up.railway.app/
+ * Corre todo en un único servicio independiente sin depender de enlaces externos:
+ *  - Web multipágina (index, login, dashboard, admin, chatbot, planes, api-studio, fundadores)
+ *  - Auth seguro (Neon PostgreSQL + scrypt + JWT) + Superadmin (josemigueldav05@gmail.com)
+ *  - Gestor de inventario por empresa (`products` + `stocks`)
+ *  - Bot WhatsApp integrado (`server/whatsappBot.js` con QR, Pairing Code y Toggle ON/OFF)
+ *  - API pública SaaS (`/api/v1/chatbot/*`, `/api/v1/stock/import`, `/api/v1/bot/*`)
+ *  - Adaptador de API Bancaria (`server/bankApi.js`) + analíticas por empresa (`usage_metrics`)
  */
 
 "use strict";
@@ -24,12 +23,17 @@ const jwt = require("jsonwebtoken");
 const fetch = require("node-fetch");
 const { Pool } = require("pg");
 const { BANK_PROVIDERS, maskSecret, verifyBankPayment } = require("./bankApi");
+const whatsappBot = require("./whatsappBot");
 
 const PORT = Number(process.env.PORT || 3000);
+const DB_URL = (
+  process.env.DATABASE_URL ||
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.POSTGRES_URL ||
+  ""
+).trim();
 const JWT_SECRET = (process.env.JWT_SECRET || "premium_soft_jwt_secret_key_2026_secure").trim();
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "30d";
-const RAILWAY_BOT_URL = (process.env.RAILWAY_BOT_URL || "https://chatbot-apirest-production.up.railway.app").replace(/\/+$/, "");
-const PANEL_ACCESS_TOKEN = (process.env.PANEL_ACCESS_TOKEN || "").trim();
 const OPENROUTER_API_KEY = (process.env.OPENROUTER_API_KEY || "").trim();
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
 const OPENROUTER_API_URL = process.env.OPENROUTER_API_URL || "https://openrouter.ai/api/v1/chat/completions";
@@ -37,13 +41,18 @@ const OPENROUTER_API_URL = process.env.OPENROUTER_API_URL || "https://openrouter
 const INITIAL_SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || "josemigueldav05@gmail.com").trim().toLowerCase();
 const INITIAL_SUPERADMIN_PASS = process.env.SUPERADMIN_PASSWORD || "Zangetsu1531.";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+const pool = DB_URL
+  ? new Pool({
+      connectionString: DB_URL,
+      ssl: { rejectUnauthorized: false }
+    })
+  : null;
+
+let dbReady = false;
+let dbLastError = DB_URL ? null : "Falta configurar la variable DATABASE_URL en Railway → Variables.";
 
 // ============================================================================
-// UTILIDADES CRIPTOGRÁFICAS (NODE 12+ Y NODE 20+)
+// UTILIDADES CRIPTOGRÁFICAS
 // ============================================================================
 function uuidv4() {
   const bytes = crypto.randomBytes(16);
@@ -61,6 +70,11 @@ function toBase64Url(str) {
     .replace(/=+$/, "");
 }
 
+function fromBase64Url(str) {
+  const pad = str.length % 4 === 0 ? "" : "=".repeat(4 - (str.length % 4));
+  return Buffer.from(str.replace(/-/g, "+").replace(/_/g, "/") + pad, "base64").toString("utf8");
+}
+
 function generateTenantApiKey(tenantId, tenantSecret) {
   const encodedId = toBase64Url(tenantId);
   const masterSecret = `${JWT_SECRET}:${tenantSecret}`;
@@ -70,6 +84,42 @@ function generateTenantApiKey(tenantId, tenantSecret) {
     .digest("hex")
     .substring(0, 32);
   return `sk_live_${encodedId}_${signature}`;
+}
+
+async function verifyTenantApiKey(apiKey) {
+  if (!pool || !apiKey || !apiKey.startsWith("sk_live_")) return null;
+  const parts = apiKey.split("_");
+  if (parts.length < 4) return null;
+  const signature = parts.pop();
+  const encodedId = parts.slice(2).join("_");
+
+  let tenantId;
+  try {
+    tenantId = fromBase64Url(encodedId);
+  } catch {
+    return null;
+  }
+
+  const res = await pool.query(
+    `SELECT t.id AS tenant_id, t.webhook_secret, wc.*
+     FROM tenants t
+     LEFT JOIN web_clients wc ON wc.tenant_id = t.id
+     WHERE t.id = $1 LIMIT 1`,
+    [tenantId]
+  );
+  if (!res.rows.length) return null;
+  const row = res.rows[0];
+  const expectedKey = generateTenantApiKey(row.tenant_id, row.webhook_secret);
+  const expectedSig = expectedKey.split("_").pop();
+
+  try {
+    const a = Buffer.from(signature, "utf8");
+    const b = Buffer.from(expectedSig, "utf8");
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  } catch {
+    return null;
+  }
+  return row;
 }
 
 function hashPassword(password) {
@@ -132,7 +182,6 @@ function sanitizeClient(row) {
     businessHours: row.business_hours,
     deliveryInfo: row.delivery_info,
     apiKey: row.api_key,
-    railwayBotUrl: RAILWAY_BOT_URL,
     createdAt: row.created_at
   };
 }
@@ -170,7 +219,7 @@ function sanitizeBankConfig(row) {
 }
 
 // ============================================================================
-// BASE DE DATOS: ESQUEMA, SEED SUPERADMIN Y TELEMETRÍA DE CONSUMO
+// BASE DE DATOS: ESQUEMA, SEED SUPERADMIN Y CONSUMO
 // ============================================================================
 async function ensureMainBranch(clientDb, tenantId) {
   const existing = await clientDb.query(
@@ -262,6 +311,13 @@ async function createAccountInDb(db, opts) {
 }
 
 async function ensureSchemaAndSeed() {
+  if (!pool) {
+    dbReady = false;
+    dbLastError = "DATABASE_URL no está configurada en las Variables de Railway.";
+    console.warn("[DB]", dbLastError);
+    return;
+  }
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS web_clients (
       id                TEXT PRIMARY KEY,
@@ -317,7 +373,6 @@ async function ensureSchemaAndSeed() {
     );
   `);
 
-  // Sembrar cuenta Superadmin inicial si aún no existe (NO sobrescribe si ya cambió su clave)
   const existingAdmin = await pool.query(
     `SELECT id, role FROM web_clients WHERE email = $1 LIMIT 1`,
     [INITIAL_SUPERADMIN_EMAIL]
@@ -339,10 +394,10 @@ async function ensureSchemaAndSeed() {
         paymentStatus: "PAID"
       });
       await db.query("COMMIT");
-      console.log(`[Seed] Superadmin creado en Neon: ${INITIAL_SUPERADMIN_EMAIL}`);
+      console.log(`[Seed] Superadmin listo en Neon: ${INITIAL_SUPERADMIN_EMAIL}`);
     } catch (err) {
       await db.query("ROLLBACK").catch(() => {});
-      console.warn("[Seed] Error creando Superadmin:", err.message);
+      console.warn("[Seed]", err.message);
     } finally {
       db.release();
     }
@@ -351,10 +406,14 @@ async function ensureSchemaAndSeed() {
       existingAdmin.rows[0].id
     ]);
   }
+
+  dbReady = true;
+  dbLastError = null;
+  console.log("[DB] Neon PostgreSQL conectado correctamente.");
 }
 
 function recordUsage(tenantId, metricType, endpoint, tokensUsed, latencyMs) {
-  if (!tenantId) return;
+  if (!pool || !tenantId) return;
   pool
     .query(
       `INSERT INTO usage_metrics (id, tenant_id, metric_type, endpoint, tokens_used, latency_ms, created_at)
@@ -365,7 +424,139 @@ function recordUsage(tenantId, metricType, endpoint, tokensUsed, latencyMs) {
 }
 
 // ============================================================================
-// EXPRESS APP + SEGURIDAD
+// MOTOR CONVERSACIONAL UNIFICADO (WEB + WHATSAPP + /api/v1/chatbot/message)
+// ============================================================================
+async function safeJsonFetch(url, options) {
+  try {
+    const res = await fetch(url, Object.assign({ timeout: 9000 }, options));
+    const json = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data: json };
+  } catch (err) {
+    return { ok: false, status: 0, error: err.message };
+  }
+}
+
+async function generateInventoryBotReply(clientRow, message, endpointLabel) {
+  const started = Date.now();
+  const tenantId = clientRow.tenant_id;
+
+  if (clientRow.bot_enabled === false) {
+    return {
+      reply: "Tu bot está APAGADO actualmente. Actívalo desde el Dashboard para responder a los clientes.",
+      source: "Bot Pausado"
+    };
+  }
+
+  const invRes = await pool.query(
+    `SELECT p.sku, p.name, p.active_ingredient, p.presentation, p.base_price,
+            COALESCE(SUM(s.quantity), 0)::int AS quantity
+     FROM products p
+     LEFT JOIN stocks s ON s.product_id = p.id
+     WHERE p.tenant_id = $1 AND p.is_active = true
+     GROUP BY p.id
+     ORDER BY quantity DESC, p.name ASC
+     LIMIT 60`,
+    [tenantId]
+  );
+
+  const catalogLines = invRes.rows.map(
+    (r, idx) =>
+      `${idx + 1}. ${r.name} (SKU: ${r.sku} | ${r.presentation} | Cat: ${r.active_ingredient}) — $${Number(r.base_price).toFixed(2)} — Stock: ${r.quantity}`
+  );
+
+  if (OPENROUTER_API_KEY) {
+    const systemPrompt = [
+      `Eres ${clientRow.bot_name || "Max"}, asesor humano de ventas de "${clientRow.business_name || "Ckekea"}" (${clientRow.business_type || "RETAIL"}) atendiendo por WhatsApp.`,
+      `Horario: ${clientRow.business_hours || "Lunes a Sábado 8am - 7pm"}. Envíos: ${clientRow.delivery_info || "Sí, hacemos envíos y entregas en tienda."}.`,
+      `REGLAS: Responde corto, humano y directo (máximo 4 líneas). Usa ÚNICAMENTE los productos y precios reales del inventario abajo. No inventes precios ni productos.`,
+      ``,
+      `INVENTARIO REAL (${invRes.rows.length} productos):`,
+      catalogLines.length ? catalogLines.join("\n") : "(Inventario vacío todavía)"
+    ].join("\n");
+
+    const aiRes = await safeJsonFetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "X-Title": `Ckekea-${clientRow.business_name || "Bot"}`
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        temperature: 0.3,
+        max_tokens: 300,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: message }
+        ]
+      })
+    });
+
+    const content =
+      aiRes.ok &&
+      aiRes.data &&
+      aiRes.data.choices &&
+      aiRes.data.choices[0] &&
+      aiRes.data.choices[0].message &&
+      aiRes.data.choices[0].message.content;
+
+    const tokensUsed = (aiRes.data && aiRes.data.usage && aiRes.data.usage.total_tokens) || 0;
+    if (content) {
+      recordUsage(tenantId, "CHATBOT_MSG", endpointLabel || "/api/bot/chat", tokensUsed, Date.now() - started);
+      return {
+        reply: content.trim(),
+        source: `OpenRouter AI + Neon (${invRes.rows.length} productos)`
+      };
+    }
+  }
+
+  recordUsage(tenantId, "CHATBOT_MSG", endpointLabel || "/api/bot/chat", 0, Date.now() - started);
+  if (!invRes.rows.length) {
+    return {
+      reply: `Hola. Soy ${clientRow.bot_name || "Max"} de ${clientRow.business_name || "Ckekea"}. Aún no hay productos cargados en el inventario; sube tu CSV o agrega artículos desde el Dashboard para que los asimile al instante.`,
+      source: "Neon Catalog Engine"
+    };
+  }
+
+  const q = String(message || "").toLowerCase();
+  const matches = invRes.rows.filter(
+    (r) =>
+      r.name.toLowerCase().includes(q) ||
+      r.sku.toLowerCase().includes(q) ||
+      String(r.active_ingredient || "").toLowerCase().includes(q)
+  );
+  const listToShow = matches.length ? matches.slice(0, 6) : invRes.rows.slice(0, 6);
+  const lines = listToShow.map(
+    (r, i) =>
+      `${i + 1}. *${r.name}* — *$${Number(r.base_price).toFixed(2)}* (${r.quantity > 0 ? `${r.quantity} disponibles` : "Agotado"})`
+  );
+
+  return {
+    reply: `${matches.length ? `Encontrado en ${clientRow.business_name}:` : `Catálogo disponible en ${clientRow.business_name}:`}\n${lines.join("\n")}\n\nIndícame el producto y cantidad que deseas.`,
+    source: `Neon Catalog Engine (${invRes.rows.length} productos)`
+  };
+}
+
+// Conectar mensajes entrantes del WhatsApp Bot embebido a Neon + IA
+whatsappBot.setMessageHandler(async ({ phone, customerName, text }) => {
+  if (!pool || !dbReady || !text) return null;
+  // Usa la cuenta activa con inventario o el Superadmin principal
+  const res = await pool.query(
+    `SELECT * FROM web_clients
+     WHERE is_active = true
+     ORDER BY (CASE WHEN email = $1 THEN 0 ELSE 1 END), updated_at DESC
+     LIMIT 1`,
+    [INITIAL_SUPERADMIN_EMAIL]
+  );
+  if (!res.rows.length) return null;
+  const clientRow = res.rows[0];
+  if (!clientRow.bot_enabled) return null;
+  const result = await generateInventoryBotReply(clientRow, `${customerName} (${phone}): ${text}`, "whatsapp_incoming");
+  return result.reply;
+});
+
+// ============================================================================
+// EXPRESS APP + MIDDLEWARES
 // ============================================================================
 const app = express();
 app.disable("x-powered-by");
@@ -380,6 +571,16 @@ app.use((req, res, next) => {
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "6mb" }));
+
+function requireDb(req, res, next) {
+  if (!pool || !dbReady) {
+    return res.status(503).json({
+      success: false,
+      error: dbLastError || "Base de datos Neon aún conectando. Verifica DATABASE_URL en las Variables de Railway."
+    });
+  }
+  next();
+}
 
 const authHits = new Map();
 function authRateLimit(req, res, next) {
@@ -398,9 +599,26 @@ function authRateLimit(req, res, next) {
   next();
 }
 
+// Autenticación dual: Bearer JWT o X-API-Key (sk_live_...)
 async function requireAuth(req, res, next) {
+  if (!pool || !dbReady) return requireDb(req, res, next);
   try {
+    const apiKeyHeader = req.headers["x-api-key"];
     const authHeader = req.headers.authorization || "";
+    const rawApiKey =
+      typeof apiKeyHeader === "string"
+        ? apiKeyHeader.trim()
+        : authHeader.startsWith("Bearer sk_live_")
+          ? authHeader.slice(7).trim()
+          : null;
+
+    if (rawApiKey) {
+      const tenantRow = await verifyTenantApiKey(rawApiKey);
+      if (!tenantRow) return res.status(401).json({ success: false, error: "API Key inválida." });
+      req.client = tenantRow;
+      return next();
+    }
+
     const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
     if (!token) {
       return res.status(401).json({ success: false, error: "Sesión requerida. Inicia sesión primero." });
@@ -420,41 +638,51 @@ async function requireAuth(req, res, next) {
     req.client = row;
     req.rawJwt = token;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ success: false, error: "Token inválido o expirado." });
   }
 }
 
 function requireSuperadmin(req, res, next) {
   if (!req.client || req.client.role !== "SUPERADMIN") {
-    return res.status(403).json({ success: false, error: "Acceso denegado: requiere privilegios de Superadmin." });
+    return res.status(403).json({ success: false, error: "Acceso denegado: requiere rol Superadmin." });
   }
   next();
 }
 
 // ============================================================================
-// HEALTH
+// HEALTH CHECK (SIEMPRE RESPONDE 200 PARA EVITAR CRASH-LOOP EN RAILWAY)
 // ============================================================================
 app.get("/api/health", async (_req, res) => {
-  try {
-    await pool.query("SELECT 1");
-    res.json({
-      status: "ok",
-      service: "ckekea-web-platform",
-      database: "neon_connected",
-      railwayBotUrl: RAILWAY_BOT_URL,
-      bankProviders: Object.keys(BANK_PROVIDERS),
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    res.status(500).json({ status: "error", database: err.message });
+  let dbStatus = "not_configured";
+  if (pool) {
+    try {
+      await pool.query("SELECT 1");
+      if (!dbReady) await ensureSchemaAndSeed().catch(() => {});
+      dbStatus = "neon_connected";
+    } catch (err) {
+      dbStatus = "error: " + err.message;
+    }
   }
+  const wa = whatsappBot.getState();
+  res.json({
+    status: "ok",
+    mode: "STANDALONE_INDEPENDENT",
+    service: "ckekea-standalone-platform",
+    database: dbStatus,
+    dbHint: dbLastError,
+    whatsapp: { active: wa.active, status: wa.status, phone: wa.connectedPhone },
+    bankProviders: Object.keys(BANK_PROVIDERS),
+    timestamp: new Date().toISOString()
+  });
 });
 
+app.get("/health", (_req, res) => res.redirect("/api/health"));
+
 // ============================================================================
-// 1. AUTENTICACIÓN: REGISTRO (CONFIRMAR CLAVE), LOGIN Y CAMBIO DE CONTRASEÑA
+// 1. AUTENTICACIÓN: REGISTRO, LOGIN, PERFIL Y CAMBIO DE CONTRASEÑA
 // ============================================================================
-app.post("/api/auth/register", authRateLimit, async (req, res) => {
+app.post("/api/auth/register", requireDb, authRateLimit, async (req, res) => {
   const {
     fullName,
     businessName,
@@ -485,7 +713,6 @@ app.post("/api/auth/register", authRateLimit, async (req, res) => {
       await db.query("ROLLBACK");
       return res.status(409).json({ success: false, error: "Ya existe una cuenta registrada con ese correo." });
     }
-
     const clientRow = await createAccountInDb(db, {
       fullName,
       businessName,
@@ -497,7 +724,6 @@ app.post("/api/auth/register", authRateLimit, async (req, res) => {
       role: "USER"
     });
     await db.query("COMMIT");
-
     recordUsage(clientRow.tenant_id, "API_CALL", "/api/auth/register", 0, 0);
     return res.status(201).json({
       success: true,
@@ -506,14 +732,13 @@ app.post("/api/auth/register", authRateLimit, async (req, res) => {
     });
   } catch (err) {
     await db.query("ROLLBACK").catch(() => {});
-    console.error("[Auth Register Error]", err);
-    return res.status(500).json({ success: false, error: "Error registrando usuario en Neon PostgreSQL." });
+    return res.status(500).json({ success: false, error: "Error registrando usuario: " + err.message });
   } finally {
     db.release();
   }
 });
 
-app.post("/api/auth/login", authRateLimit, async (req, res) => {
+app.post("/api/auth/login", requireDb, authRateLimit, async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password) {
@@ -526,13 +751,12 @@ app.post("/api/auth/login", authRateLimit, async (req, res) => {
     }
     const row = result.rows[0];
     if (row.is_active === false) {
-      return res.status(403).json({ success: false, error: "Esta cuenta está suspendida. Contacta al administrador." });
+      return res.status(403).json({ success: false, error: "Esta cuenta está suspendida." });
     }
     const valid = await verifyPassword(String(password), row.password_hash);
     if (!valid) {
       return res.status(401).json({ success: false, error: "Correo o contraseña incorrectos." });
     }
-
     recordUsage(row.tenant_id, "API_CALL", "/api/auth/login", 0, 0);
     return res.json({
       success: true,
@@ -540,8 +764,7 @@ app.post("/api/auth/login", authRateLimit, async (req, res) => {
       client: sanitizeClient(row)
     });
   } catch (err) {
-    console.error("[Auth Login Error]", err);
-    return res.status(500).json({ success: false, error: "Error validando credenciales." });
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -550,8 +773,7 @@ app.get("/api/auth/me", requireAuth, async (req, res) => {
     const [countRes, usageRes] = await Promise.all([
       pool.query(
         `SELECT COUNT(*)::int AS total_products, COALESCE(SUM(s.quantity), 0)::int AS total_units
-         FROM products p
-         LEFT JOIN stocks s ON s.product_id = p.id
+         FROM products p LEFT JOIN stocks s ON s.product_id = p.id
          WHERE p.tenant_id = $1 AND p.is_active = true`,
         [req.client.tenant_id]
       ),
@@ -559,8 +781,7 @@ app.get("/api/auth/me", requireAuth, async (req, res) => {
         `SELECT
            COUNT(*) FILTER (WHERE metric_type = 'API_CALL')::int AS api_calls,
            COUNT(*) FILTER (WHERE metric_type = 'CHATBOT_MSG')::int AS chatbot_msgs
-         FROM usage_metrics
-         WHERE tenant_id = $1`,
+         FROM usage_metrics WHERE tenant_id = $1`,
         [req.client.tenant_id]
       )
     ]);
@@ -580,7 +801,6 @@ app.get("/api/auth/me", requireAuth, async (req, res) => {
   }
 });
 
-// Cambio de contraseña desde el panel de usuarios o panel de admin
 app.put("/api/auth/change-password", requireAuth, async (req, res) => {
   try {
     const { currentPassword, newPassword, confirmNewPassword } = req.body || {};
@@ -593,34 +813,30 @@ app.put("/api/auth/change-password", requireAuth, async (req, res) => {
     if (String(newPassword) !== String(confirmNewPassword)) {
       return res.status(400).json({ success: false, error: "La nueva contraseña y su confirmación no coinciden." });
     }
-
     const ok = await verifyPassword(String(currentPassword), req.client.password_hash);
-    if (!ok) {
-      return res.status(401).json({ success: false, error: "La contraseña actual es incorrecta." });
-    }
+    if (!ok) return res.status(401).json({ success: false, error: "La contraseña actual es incorrecta." });
 
     const newHash = await hashPassword(String(newPassword));
-    await pool.query(
-      `UPDATE web_clients SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
-      [newHash, req.client.id]
-    );
-
+    await pool.query(`UPDATE web_clients SET password_hash = $1, updated_at = NOW() WHERE id = $2`, [
+      newHash,
+      req.client.id
+    ]);
     await pool
       .query(
         `INSERT INTO operation_logs (id, tenant_id, operation, description, metadata, created_at)
-         VALUES ($1, $2, 'PASSWORD_CHANGED', 'Cambio de contraseña realizado por el usuario', '{}'::jsonb, NOW())`,
+         VALUES ($1, $2, 'PASSWORD_CHANGED', 'Cambio de contraseña realizado', '{}'::jsonb, NOW())`,
         [uuidv4(), req.client.tenant_id]
       )
       .catch(() => {});
 
-    res.json({ success: true, message: "Contraseña actualizada con cifrado scrypt correctamente." });
+    res.json({ success: true, message: "Contraseña actualizada correctamente." });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // ============================================================================
-// 2. API BANCARIA AUTOMÁTICA (LISTA PARA MERCANTIL / BDV / BANESCO / BNC)
+// 2. API BANCARIA PLUG-AND-PLAY + PAGOS
 // ============================================================================
 async function resolveEffectiveBankConfig(tenantId) {
   const tenantCfg = await pool.query(`SELECT * FROM bank_integrations WHERE tenant_id = $1 LIMIT 1`, [tenantId]);
@@ -629,9 +845,7 @@ async function resolveEffectiveBankConfig(tenantId) {
   return globalCfg.rows[0] || null;
 }
 
-app.get("/api/bank/providers", (_req, res) => {
-  res.json({ success: true, providers: BANK_PROVIDERS });
-});
+app.get("/api/bank/providers", (_req, res) => res.json({ success: true, providers: BANK_PROVIDERS }));
 
 app.get("/api/bank/config", requireAuth, async (req, res) => {
   try {
@@ -662,10 +876,8 @@ app.put("/api/bank/config", requireAuth, async (req, res) => {
       : "MANUAL";
 
     const existing = await pool.query(`SELECT * FROM bank_integrations WHERE tenant_id = $1 LIMIT 1`, [req.client.tenant_id]);
-
     let saved;
     if (existing.rows.length) {
-      const prev = existing.rows[0];
       saved = await pool.query(
         `UPDATE bank_integrations
          SET provider = $1, verification_mode = $2, api_base_url = $3,
@@ -673,19 +885,13 @@ app.put("/api/bank/config", requireAuth, async (req, res) => {
              client_secret = COALESCE(NULLIF($5, ''), client_secret),
              merchant_id = $6, account_phone = $7, account_rif = $8,
              auto_approve = $9, updated_at = NOW()
-         WHERE id = $10
-         RETURNING *`,
+         WHERE id = $10 RETURNING *`,
         [
-          safeProvider,
-          safeMode,
-          String(apiBaseUrl).trim(),
+          safeProvider, safeMode, String(apiBaseUrl).trim(),
           apiKey ? String(apiKey).trim() : "",
           clientSecret ? String(clientSecret).trim() : "",
-          String(merchantId).trim(),
-          String(accountPhone).trim(),
-          String(accountRif).trim(),
-          Boolean(autoApprove),
-          prev.id
+          String(merchantId).trim(), String(accountPhone).trim(), String(accountRif).trim(),
+          Boolean(autoApprove), existing.rows[0].id
         ]
       );
     } else {
@@ -693,24 +899,15 @@ app.put("/api/bank/config", requireAuth, async (req, res) => {
         `INSERT INTO bank_integrations
           (id, tenant_id, scope, provider, verification_mode, api_base_url, api_key, client_secret,
            merchant_id, account_phone, account_rif, auto_approve, updated_at)
-         VALUES ($1, $2, 'TENANT', $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
-         RETURNING *`,
+         VALUES ($1, $2, 'TENANT', $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) RETURNING *`,
         [
-          uuidv4(),
-          req.client.tenant_id,
-          safeProvider,
-          safeMode,
-          String(apiBaseUrl).trim(),
-          apiKey ? String(apiKey).trim() : null,
-          clientSecret ? String(clientSecret).trim() : null,
-          String(merchantId).trim(),
-          String(accountPhone).trim(),
-          String(accountRif).trim(),
+          uuidv4(), req.client.tenant_id, safeProvider, safeMode, String(apiBaseUrl).trim(),
+          apiKey ? String(apiKey).trim() : null, clientSecret ? String(clientSecret).trim() : null,
+          String(merchantId).trim(), String(accountPhone).trim(), String(accountRif).trim(),
           Boolean(autoApprove)
         ]
       );
     }
-
     recordUsage(req.client.tenant_id, "API_CALL", "/api/bank/config", 0, 0);
     res.json({ success: true, config: sanitizeBankConfig(saved.rows[0]) });
   } catch (err) {
@@ -718,14 +915,12 @@ app.put("/api/bank/config", requireAuth, async (req, res) => {
   }
 });
 
-// Endpoint de validación bancaria automática (consumible por los bots vendidos y por el dashboard)
 app.post("/api/bank/verify-payment", requireAuth, async (req, res) => {
   const started = Date.now();
   try {
     const cfg = await resolveEffectiveBankConfig(req.client.tenant_id);
     const result = await verifyBankPayment(cfg, req.body || {});
     recordUsage(req.client.tenant_id, "BANK_VERIFY", "/api/bank/verify-payment", 0, Date.now() - started);
-
     await pool
       .query(
         `INSERT INTO operation_logs (id, tenant_id, operation, description, metadata, created_at)
@@ -733,22 +928,17 @@ app.post("/api/bank/verify-payment", requireAuth, async (req, res) => {
         [uuidv4(), req.client.tenant_id, result.message, JSON.stringify(result)]
       )
       .catch(() => {});
-
     res.json({ success: true, data: result });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ============================================================================
-// 3. CONFIRMACIÓN DE PAGO DE PLAN (CON CONCILIACIÓN BANCARIA SI ESTÁ ACTIVA)
-// ============================================================================
 app.post("/api/payments/confirm", requireAuth, async (req, res) => {
   const { planTier = "PRO", reference, originBank = "Mercantil (0105)", amountUsd = 49, amountBs = 0 } = req.body || {};
   if (!reference || String(reference).trim().length < 4) {
     return res.status(400).json({ success: false, error: "Referencia de pago inválida." });
   }
-
   const safePlan = ["ESTANDAR", "PRO", "GOLD"].includes(String(planTier).toUpperCase())
     ? String(planTier).toUpperCase()
     : "PRO";
@@ -756,39 +946,31 @@ app.post("/api/payments/confirm", requireAuth, async (req, res) => {
 
   const globalBank = await pool.query(`SELECT * FROM bank_integrations WHERE scope = 'GLOBAL' LIMIT 1`);
   const bankCheck = await verifyBankPayment(globalBank.rows[0] || null, {
-    reference,
-    amountUsd,
-    amountBs,
-    payerPhone: req.client.phone
+    reference, amountUsd, amountBs, payerPhone: req.client.phone
   });
 
   const db = await pool.connect();
   try {
     await db.query("BEGIN");
     const updated = await db.query(
-      `UPDATE web_clients
-       SET plan_tier = $1, payment_status = 'PAID', payment_reference = $2, updated_at = NOW()
-       WHERE id = $3
-       RETURNING *`,
+      `UPDATE web_clients SET plan_tier = $1, payment_status = 'PAID', payment_reference = $2, updated_at = NOW()
+       WHERE id = $3 RETURNING *`,
       [safePlan, String(reference).trim(), req.client.id]
     );
     await db.query(`UPDATE tenants SET plan = $1::"PlanType", updated_at = NOW() WHERE id = $2`, [
-      prismaPlan,
-      req.client.tenant_id
+      prismaPlan, req.client.tenant_id
     ]);
     await db
       .query(
         `INSERT INTO operation_logs (id, tenant_id, operation, description, metadata, created_at)
          VALUES ($1, $2, 'PLAN_PAYMENT_REGISTERED', $3, $4::jsonb, NOW())`,
         [
-          uuidv4(),
-          req.client.tenant_id,
+          uuidv4(), req.client.tenant_id,
           `Pago Móvil Plan ${safePlan} Ref #${String(reference).trim()} (${bankCheck.status})`,
           JSON.stringify({ planTier: safePlan, originBank, amountUsd, reference, bankCheck })
         ]
       )
       .catch(() => {});
-
     await db.query("COMMIT");
     recordUsage(req.client.tenant_id, "API_CALL", "/api/payments/confirm", 0, 0);
     return res.json({ success: true, client: sanitizeClient(updated.rows[0]), bankVerification: bankCheck });
@@ -801,51 +983,14 @@ app.post("/api/payments/confirm", requireAuth, async (req, res) => {
 });
 
 // ============================================================================
-// 4. INVENTARIO DEL CLIENTE (NEON POSTGRESQL `products` + `stocks`)
+// 3. INVENTARIO DEL CLIENTE (NEON `products` + `stocks`)
 // ============================================================================
-app.get("/api/inventory", requireAuth, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT p.id, p.sku, p.name, p.description, p.active_ingredient, p.laboratory,
-              p.presentation, p.origin, p.base_price, p.is_active,
-              COALESCE(SUM(s.quantity), 0)::int AS quantity
-       FROM products p
-       LEFT JOIN stocks s ON s.product_id = p.id
-       WHERE p.tenant_id = $1 AND p.is_active = true
-       GROUP BY p.id
-       ORDER BY p.updated_at DESC
-       LIMIT 300`,
-      [req.client.tenant_id]
-    );
-
-    recordUsage(req.client.tenant_id, "API_CALL", "/api/inventory", 0, 0);
-    res.json({
-      success: true,
-      items: result.rows.map((r) => ({
-        id: r.id,
-        sku: r.sku,
-        name: r.name,
-        description: r.description || "",
-        activeIngredient: r.active_ingredient,
-        laboratory: r.laboratory,
-        presentation: r.presentation,
-        origin: r.origin,
-        price: Number(r.base_price),
-        quantity: Number(r.quantity)
-      }))
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 async function upsertProductsForTenant(tenantId, items) {
   const db = await pool.connect();
   let imported = 0;
   try {
     await db.query("BEGIN");
     const branchId = await ensureMainBranch(db, tenantId);
-
     for (const raw of items) {
       const name = String(raw.name || "").trim();
       const price = Number(raw.price);
@@ -867,7 +1012,6 @@ async function upsertProductsForTenant(tenantId, items) {
         `SELECT id FROM products WHERE sku = $1 AND tenant_id = $2 LIMIT 1`,
         [sku, tenantId]
       );
-
       let productId;
       if (existing.rows.length > 0) {
         productId = existing.rows[0].id;
@@ -894,11 +1038,9 @@ async function upsertProductsForTenant(tenantId, items) {
         `SELECT id FROM stocks WHERE product_id = $1 AND branch_id = $2 LIMIT 1`,
         [productId, branchId]
       );
-
       if (stockRow.rows.length > 0) {
         await db.query(`UPDATE stocks SET quantity = $1, updated_at = NOW() WHERE id = $2`, [
-          quantity,
-          stockRow.rows[0].id
+          quantity, stockRow.rows[0].id
         ]);
       } else {
         await db.query(
@@ -909,7 +1051,6 @@ async function upsertProductsForTenant(tenantId, items) {
       }
       imported += 1;
     }
-
     await db.query("COMMIT");
     return imported;
   } catch (err) {
@@ -921,19 +1062,13 @@ async function upsertProductsForTenant(tenantId, items) {
 }
 
 function parseCsvInventory(csvText) {
-  const lines = String(csvText || "")
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
+  const lines = String(csvText || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (!lines.length) return [];
-
   const delimiter = lines[0].includes(";") ? ";" : ",";
   const firstCols = lines[0].toLowerCase();
   const hasHeader = firstCols.includes("sku") || firstCols.includes("nombre") || firstCols.includes("name") || firstCols.includes("precio");
-  const startIdx = hasHeader ? 1 : 0;
-
   const items = [];
-  for (let i = startIdx; i < lines.length; i++) {
+  for (let i = hasHeader ? 1 : 0; i < lines.length; i++) {
     const cols = lines[i].split(delimiter).map((c) => c.trim().replace(/^"|"$/g, ""));
     if (cols.length < 3) continue;
     items.push({
@@ -949,12 +1084,36 @@ function parseCsvInventory(csvText) {
   return items;
 }
 
+app.get("/api/inventory", requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.id, p.sku, p.name, p.description, p.active_ingredient, p.laboratory,
+              p.presentation, p.origin, p.base_price, p.is_active,
+              COALESCE(SUM(s.quantity), 0)::int AS quantity
+       FROM products p LEFT JOIN stocks s ON s.product_id = p.id
+       WHERE p.tenant_id = $1 AND p.is_active = true
+       GROUP BY p.id ORDER BY p.updated_at DESC LIMIT 300`,
+      [req.client.tenant_id]
+    );
+    recordUsage(req.client.tenant_id, "API_CALL", "/api/inventory", 0, 0);
+    res.json({
+      success: true,
+      items: result.rows.map((r) => ({
+        id: r.id, sku: r.sku, name: r.name, description: r.description || "",
+        activeIngredient: r.active_ingredient, laboratory: r.laboratory,
+        presentation: r.presentation, origin: r.origin,
+        price: Number(r.base_price), quantity: Number(r.quantity)
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post("/api/inventory", requireAuth, async (req, res) => {
   try {
     const count = await upsertProductsForTenant(req.client.tenant_id, [req.body]);
-    if (!count) {
-      return res.status(400).json({ success: false, error: "Debes indicar al menos nombre y precio mayor a 0." });
-    }
+    if (!count) return res.status(400).json({ success: false, error: "Indica al menos nombre y precio mayor a 0." });
     recordUsage(req.client.tenant_id, "API_CALL", "/api/inventory", 0, 0);
     res.status(201).json({ success: true, imported: count });
   } catch (err) {
@@ -962,32 +1121,17 @@ app.post("/api/inventory", requireAuth, async (req, res) => {
   }
 });
 
-app.post("/api/inventory/bulk", requireAuth, async (req, res) => {
+app.post(["/api/inventory/bulk", "/api/v1/stock/import"], requireAuth, async (req, res) => {
   try {
-    const { items, csvText } = req.body || {};
+    const { items, csvText, rawText } = req.body || {};
     let parsed = Array.isArray(items) ? items : [];
-    if (!parsed.length && csvText) parsed = parseCsvInventory(csvText);
+    if (!parsed.length && (csvText || rawText)) parsed = parseCsvInventory(csvText || rawText);
     if (!parsed.length) {
-      return res.status(400).json({
-        success: false,
-        error: "No se encontraron productos válidos. Formato CSV: sku,nombre,precio,stock,categoria,presentacion"
-      });
+      return res.status(400).json({ success: false, error: "Formato CSV esperado: sku,nombre,precio,stock,categoria,presentacion" });
     }
-
     const imported = await upsertProductsForTenant(req.client.tenant_id, parsed);
-    recordUsage(req.client.tenant_id, "API_CALL", "/api/inventory/bulk", 0, 0);
-
-    fetch(`${RAILWAY_BOT_URL}/api/v1/stock/import`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-API-Key": req.client.api_key },
-      body: JSON.stringify({ items: parsed })
-    }).catch(() => {});
-
-    res.status(201).json({
-      success: true,
-      imported,
-      message: `${imported} productos guardados en Neon y asimilados por el Bot.`
-    });
+    recordUsage(req.client.tenant_id, "API_CALL", req.path, 0, 0);
+    res.status(201).json({ success: true, imported, message: `${imported} productos guardados en Neon y asimilados por el Bot.` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -995,10 +1139,9 @@ app.post("/api/inventory/bulk", requireAuth, async (req, res) => {
 
 app.delete("/api/inventory/:productId", requireAuth, async (req, res) => {
   try {
-    await pool.query(
-      `UPDATE products SET is_active = false, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
-      [req.params.productId, req.client.tenant_id]
-    );
+    await pool.query(`UPDATE products SET is_active = false, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`, [
+      req.params.productId, req.client.tenant_id
+    ]);
     recordUsage(req.client.tenant_id, "API_CALL", "/api/inventory/delete", 0, 0);
     res.json({ success: true });
   } catch (err) {
@@ -1007,126 +1150,69 @@ app.delete("/api/inventory/:productId", requireAuth, async (req, res) => {
 });
 
 // ============================================================================
-// 5. CONTROL DEL BOT, WHATSAPP QR Y CHAT CON INVENTARIO REAL
+// 4. CONTROL DEL BOT EMBEBIDO (100% INDEPENDIENTE — SIN LINK EXTERNO)
 // ============================================================================
-async function safeJsonFetch(url, options) {
-  try {
-    const res = await fetch(url, Object.assign({ timeout: 5500 }, options));
-    const json = await res.json().catch(() => ({}));
-    return { ok: res.ok, status: res.status, data: json };
-  } catch (err) {
-    return { ok: false, status: 0, error: err.message };
-  }
-}
-
-app.get("/api/bot/status", requireAuth, async (req, res) => {
-  const authHeaders = {
-    "Content-Type": "application/json",
-    "X-API-Key": req.client.api_key,
-    Authorization: `Bearer ${req.rawJwt}`
-  };
-  const panelHeaders = Object.assign(
-    { "Content-Type": "application/json" },
-    PANEL_ACCESS_TOKEN ? { "X-Panel-Token": PANEL_ACCESS_TOKEN } : {}
-  );
-
-  const [statusRes, qrRes, aiRes, panelRes] = await Promise.all([
-    safeJsonFetch(`${RAILWAY_BOT_URL}/api/v1/bot/status`, { headers: authHeaders }),
-    safeJsonFetch(`${RAILWAY_BOT_URL}/api/v1/bot/qr`, { headers: authHeaders }),
-    safeJsonFetch(`${RAILWAY_BOT_URL}/api/v1/bot/ai-status`, { headers: authHeaders }),
-    safeJsonFetch(`${RAILWAY_BOT_URL}/api/v1/panel/state`, { headers: panelHeaders })
-  ]);
-
-  const panelBot = (panelRes.ok && panelRes.data && panelRes.data.data && panelRes.data.data.bot) || {};
-  const apiStatus = (statusRes.ok && statusRes.data && statusRes.data.data) || {};
-  const apiQr = (qrRes.ok && qrRes.data && qrRes.data.data) || {};
-  const aiData = (aiRes.ok && aiRes.data && aiRes.data.data) || (panelRes.ok && panelRes.data && panelRes.data.data && panelRes.data.data.ai) || null;
-
-  const qrBase64 = apiQr.qrBase64 || apiQr.qr || panelBot.qrBase64 || null;
-  const waStatus = apiStatus.status || panelBot.status || (qrBase64 ? "QR_READY" : "CONNECTED_STANDBY");
-
+app.get(["/api/bot/status", "/api/v1/bot/status"], requireAuth, async (req, res) => {
+  const wa = whatsappBot.getState();
   res.json({
     success: true,
     data: {
       botEnabled: Boolean(req.client.bot_enabled),
-      railwayBotActive: typeof panelBot.active === "boolean" ? panelBot.active : typeof apiStatus.active === "boolean" ? apiStatus.active : Boolean(req.client.bot_enabled),
-      railwayOnline: Boolean(statusRes.ok || panelRes.ok),
-      railwayUrl: RAILWAY_BOT_URL,
-      waStatus,
-      qrBase64,
-      botName: req.client.bot_name || "Max",
-      whatsappPhone: req.client.whatsapp_phone || process.env.WHATSAPP_BOT_NUMBER || "+584166214410",
+      engineActive: wa.active,
+      standalone: true,
+      waStatus: wa.status,
+      qrBase64: wa.qrBase64,
+      lastError: wa.lastError,
+      botName: req.client.bot_name || process.env.BOT_NAME || "Max",
+      whatsappPhone: wa.connectedPhone || req.client.whatsapp_phone || process.env.WHATSAPP_BOT_NUMBER || "+584166214410",
       businessHours: req.client.business_hours,
-      deliveryInfo: req.client.delivery_info,
-      ai: aiData
+      deliveryInfo: req.client.delivery_info
     }
   });
 });
 
-app.post("/api/bot/toggle", requireAuth, async (req, res) => {
+app.get("/api/v1/bot/qr", requireAuth, (_req, res) => {
+  const wa = whatsappBot.getState();
+  res.json({ success: true, data: { status: wa.status, qrBase64: wa.qrBase64 } });
+});
+
+app.post(["/api/bot/toggle", "/api/v1/bot/toggle"], requireAuth, async (req, res) => {
   try {
     const requested = req.body && typeof req.body.active === "boolean" ? req.body.active : !req.client.bot_enabled;
-
     const updated = await pool.query(
       `UPDATE web_clients SET bot_enabled = $1, updated_at = NOW() WHERE id = $2 RETURNING bot_enabled`,
       [requested, req.client.id]
     );
     await pool.query(`UPDATE tenants SET whatsapp_enabled = $1, updated_at = NOW() WHERE id = $2`, [
-      requested,
-      req.client.tenant_id
+      requested, req.client.tenant_id
     ]);
-
-    const authHeaders = {
-      "Content-Type": "application/json",
-      "X-API-Key": req.client.api_key,
-      Authorization: `Bearer ${req.rawJwt}`
-    };
-    const [botToggle, panelToggle] = await Promise.all([
-      safeJsonFetch(`${RAILWAY_BOT_URL}/api/v1/bot/toggle`, {
-        method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify({ active: requested })
-      }),
-      safeJsonFetch(`${RAILWAY_BOT_URL}/api/v1/panel/bot-toggle`, {
-        method: "POST",
-        headers: Object.assign({ "Content-Type": "application/json" }, PANEL_ACCESS_TOKEN ? { "X-Panel-Token": PANEL_ACCESS_TOKEN } : {}),
-        body: JSON.stringify({ active: requested })
-      })
-    ]);
-
-    recordUsage(req.client.tenant_id, "API_CALL", "/api/bot/toggle", 0, 0);
-    res.json({
-      success: true,
-      botEnabled: updated.rows[0].bot_enabled,
-      railwaySynced: Boolean(botToggle.ok || panelToggle.ok)
-    });
+    whatsappBot.setActive(requested);
+    recordUsage(req.client.tenant_id, "API_CALL", req.path, 0, 0);
+    res.json({ success: true, botEnabled: updated.rows[0].bot_enabled, standaloneSynced: true });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.post("/api/bot/pairing-code", requireAuth, async (req, res) => {
-  const phone = String((req.body && req.body.phone) || req.client.whatsapp_phone || "").replace(/\D/g, "");
-  if (phone.length < 10) {
-    return res.status(400).json({ success: false, error: "Ingresa un número válido con código de país (ej. 584166214410)." });
+app.post(["/api/bot/restart", "/api/v1/bot/restart"], requireAuth, async (req, res) => {
+  try {
+    const wa = await whatsappBot.restart();
+    recordUsage(req.client.tenant_id, "API_CALL", req.path, 0, 0);
+    res.json({ success: true, data: wa });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
-  const r = await safeJsonFetch(`${RAILWAY_BOT_URL}/api/v1/bot/pairing-code`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": req.client.api_key,
-      Authorization: `Bearer ${req.rawJwt}`
-    },
-    body: JSON.stringify({ phone })
-  });
-  if (!r.ok) {
-    return res.status(502).json({
-      success: false,
-      error: (r.data && r.data.error && r.data.error.message) || "Railway no devolvió código en este momento. Escanea el QR directo."
-    });
+});
+
+app.post(["/api/bot/pairing-code", "/api/v1/bot/pairing-code"], requireAuth, async (req, res) => {
+  try {
+    const phone = (req.body && req.body.phone) || req.client.whatsapp_phone || "";
+    const data = await whatsappBot.requestPairingCode(phone);
+    recordUsage(req.client.tenant_id, "API_CALL", req.path, 0, 0);
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
   }
-  recordUsage(req.client.tenant_id, "API_CALL", "/api/bot/pairing-code", 0, 0);
-  res.json({ success: true, data: r.data.data || r.data });
 });
 
 app.put("/api/bot/settings", requireAuth, async (req, res) => {
@@ -1141,8 +1227,7 @@ app.put("/api/bot/settings", requireAuth, async (req, res) => {
            delivery_info = COALESCE($5, delivery_info),
            business_type = COALESCE($6, business_type),
            updated_at = NOW()
-       WHERE id = $7
-       RETURNING *`,
+       WHERE id = $7 RETURNING *`,
       [
         botName ? String(botName).trim() : null,
         businessName ? String(businessName).trim() : null,
@@ -1154,9 +1239,7 @@ app.put("/api/bot/settings", requireAuth, async (req, res) => {
       ]
     );
     await pool.query(`UPDATE tenants SET name = $1, whatsapp_phone = $2, updated_at = NOW() WHERE id = $3`, [
-      updated.rows[0].business_name,
-      updated.rows[0].whatsapp_phone,
-      req.client.tenant_id
+      updated.rows[0].business_name, updated.rows[0].whatsapp_phone, req.client.tenant_id
     ]);
     recordUsage(req.client.tenant_id, "API_CALL", "/api/bot/settings", 0, 0);
     res.json({ success: true, client: sanitizeClient(updated.rows[0]) });
@@ -1165,138 +1248,139 @@ app.put("/api/bot/settings", requireAuth, async (req, res) => {
   }
 });
 
+// Chat interno del Dashboard
 app.post("/api/bot/chat", requireAuth, async (req, res) => {
-  const started = Date.now();
   try {
     const message = String((req.body && req.body.message) || "").trim();
-    if (!message) {
-      return res.status(400).json({ success: false, error: "Escribe un mensaje para probar tu bot." });
-    }
-    if (!req.client.bot_enabled) {
-      return res.json({
-        success: true,
-        reply: "Tu bot está APAGADO actualmente. Actívalo con el interruptor superior para que responda a tus clientes.",
-        source: "Bot Pausado"
-      });
-    }
-
-    const invRes = await pool.query(
-      `SELECT p.sku, p.name, p.active_ingredient, p.presentation, p.base_price,
-              COALESCE(SUM(s.quantity), 0)::int AS quantity
-       FROM products p
-       LEFT JOIN stocks s ON s.product_id = p.id
-       WHERE p.tenant_id = $1 AND p.is_active = true
-       GROUP BY p.id
-       ORDER BY quantity DESC, p.name ASC
-       LIMIT 60`,
-      [req.client.tenant_id]
-    );
-
-    const catalogLines = invRes.rows.map(
-      (r, idx) =>
-        `${idx + 1}. ${r.name} (SKU: ${r.sku} | ${r.presentation} | Cat: ${r.active_ingredient}) — $${Number(r.base_price).toFixed(2)} — Stock: ${r.quantity}`
-    );
-
-    if (OPENROUTER_API_KEY) {
-      const systemPrompt = [
-        `Eres ${req.client.bot_name || "Max"}, vendedor humano de "${req.client.business_name}" (${req.client.business_type}) en WhatsApp.`,
-        `Horario: ${req.client.business_hours}. Envíos: ${req.client.delivery_info}.`,
-        `REGLAS: Responde corto, profesional y directo (máximo 4 líneas, sin emojis excesivos). Usa ÚNICAMENTE los productos y precios reales del inventario abajo.`,
-        ``,
-        `INVENTARIO REAL DEL COMERCIO (${invRes.rows.length} productos):`,
-        catalogLines.length ? catalogLines.join("\n") : "(Inventario vacío todavía)"
-      ].join("\n");
-
-      const aiRes = await safeJsonFetch(OPENROUTER_API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "X-Title": `Ckekea-${req.client.business_name}`
-        },
-        body: JSON.stringify({
-          model: OPENROUTER_MODEL,
-          temperature: 0.3,
-          max_tokens: 300,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: message }
-          ]
-        })
-      });
-
-      const content =
-        aiRes.ok &&
-        aiRes.data &&
-        aiRes.data.choices &&
-        aiRes.data.choices[0] &&
-        aiRes.data.choices[0].message &&
-        aiRes.data.choices[0].message.content;
-
-      const tokensUsed = (aiRes.data && aiRes.data.usage && aiRes.data.usage.total_tokens) || 0;
-      if (content) {
-        recordUsage(req.client.tenant_id, "CHATBOT_MSG", "/api/bot/chat", tokensUsed, Date.now() - started);
-        return res.json({
-          success: true,
-          reply: content.trim(),
-          source: `OpenRouter AI + Neon (${invRes.rows.length} productos)`
-        });
-      }
-    }
-
-    recordUsage(req.client.tenant_id, "CHATBOT_MSG", "/api/bot/chat", 0, Date.now() - started);
-    if (!invRes.rows.length) {
-      return res.json({
-        success: true,
-        reply: `Hola. Soy ${req.client.bot_name} de ${req.client.business_name}. Aún no tienes productos cargados; sube tu archivo CSV o agrega productos para que los asimile al instante.`,
-        source: "Neon Catalog Engine"
-      });
-    }
-
-    const q = message.toLowerCase();
-    const matches = invRes.rows.filter(
-      (r) =>
-        r.name.toLowerCase().includes(q) ||
-        r.sku.toLowerCase().includes(q) ||
-        String(r.active_ingredient || "").toLowerCase().includes(q)
-    );
-    const listToShow = matches.length ? matches.slice(0, 6) : invRes.rows.slice(0, 6);
-    const lines = listToShow.map(
-      (r, i) => `${i + 1}. *${r.name}* — *$${Number(r.base_price).toFixed(2)}* (${r.quantity > 0 ? `${r.quantity} disponibles` : "Agotado"})`
-    );
-
-    return res.json({
-      success: true,
-      reply: `${matches.length ? `Encontrado en ${req.client.business_name}:` : `Catálogo disponible en ${req.client.business_name}:`}\n${lines.join("\n")}\n\nIndícame el producto y cantidad que deseas.`,
-      source: `Neon Catalog Engine (${invRes.rows.length} productos)`
-    });
+    if (!message) return res.status(400).json({ success: false, error: "Escribe un mensaje." });
+    const out = await generateInventoryBotReply(req.client, message, "/api/bot/chat");
+    res.json({ success: true, reply: out.reply, source: out.source });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // ============================================================================
-// 6. PANEL SUPERADMIN — GESTIÓN TOTAL DE USUARIOS, CONSUMO Y API BANCARIA GLOBAL
+// 5. API PÚBLICA SAAS (/api/v1/chatbot/*) — 100% EMBEBIDA EN ESTE SERVIDOR
+// ============================================================================
+app.post("/api/v1/chatbot/message", requireAuth, async (req, res) => {
+  try {
+    const message = String((req.body && req.body.message) || "").trim();
+    if (!message) return res.status(400).json({ success: false, error: { message: "message requerido" } });
+    const out = await generateInventoryBotReply(req.client, message, "/api/v1/chatbot/message");
+    const convId = (req.body && req.body.conversation_id) || uuidv4();
+    const queryId = uuidv4();
+    await pool
+      .query(
+        `INSERT INTO operation_logs (id, tenant_id, operation, description, metadata, created_at)
+         VALUES ($1, $2, 'CHATBOT_QUERY', $3, $4::jsonb, NOW())`,
+        [
+          queryId, req.client.tenant_id, message.slice(0, 120),
+          JSON.stringify({ conversation_id: convId, question: message, response: out.reply, source: out.source })
+        ]
+      )
+      .catch(() => {});
+
+    res.json({
+      success: true,
+      data: { response: out.reply, state: "ACTIVE", conversation_id: convId, query_id: queryId, source: out.source }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+app.get("/api/v1/chatbot/conversations", requireAuth, async (req, res) => {
+  try {
+    const logs = await pool.query(
+      `SELECT id, description, metadata, created_at FROM operation_logs
+       WHERE tenant_id = $1 AND operation = 'CHATBOT_QUERY'
+       ORDER BY created_at DESC LIMIT 30`,
+      [req.client.tenant_id]
+    );
+    res.json({
+      success: true,
+      data: logs.rows.map((r) => ({
+        id: r.id,
+        customer_name: req.client.business_name,
+        title: r.description,
+        state: "ACTIVE",
+        updated_at: r.created_at
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+app.post("/api/v1/chatbot/rate/:queryId", requireAuth, async (req, res) => {
+  try {
+    const helpful = Boolean(req.body && req.body.helpful);
+    await pool.query(
+      `UPDATE operation_logs SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb WHERE id = $2 AND tenant_id = $3`,
+      [JSON.stringify({ was_helpful: helpful }), req.params.queryId, req.client.tenant_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+app.post("/api/v1/chatbot/api-keys/generate", requireAuth, async (req, res) => {
+  const { name, email, plan = "PRO", business_type = "RETAIL", whatsapp_phone } = req.body || {};
+  if (!name || !email) return res.status(400).json({ success: false, error: { message: "name y email requeridos" } });
+
+  const db = await pool.connect();
+  try {
+    await db.query("BEGIN");
+    const normEmail = String(email).trim().toLowerCase();
+    const existing = await db.query(`SELECT * FROM web_clients WHERE email = $1 LIMIT 1`, [normEmail]);
+    let row;
+    if (existing.rows.length) {
+      row = existing.rows[0];
+    } else {
+      row = await createAccountInDb(db, {
+        fullName: name,
+        businessName: name,
+        businessType: business_type,
+        email: normEmail,
+        phone: whatsapp_phone || "",
+        password: crypto.randomBytes(12).toString("hex"),
+        planTier: String(plan).toUpperCase() === "LITE" ? "ESTANDAR" : "PRO",
+        paymentStatus: "PAID"
+      });
+    }
+    await db.query("COMMIT");
+    res.status(201).json({
+      success: true,
+      data: {
+        tenantId: row.tenant_id,
+        name: row.business_name,
+        email: row.email,
+        businessType: row.business_type,
+        plan: row.plan_tier,
+        apiKey: row.api_key
+      }
+    });
+  } catch (err) {
+    await db.query("ROLLBACK").catch(() => {});
+    res.status(500).json({ success: false, error: { message: err.message } });
+  } finally {
+    db.release();
+  }
+});
+
+// ============================================================================
+// 6. PANEL SUPERADMIN
 // ============================================================================
 app.get("/api/admin/overview", requireAuth, requireSuperadmin, async (_req, res) => {
   try {
     const [companiesRes, dailyRes, logsRes, globalBankRes] = await Promise.all([
       pool.query(`
         SELECT
-          wc.id,
-          wc.tenant_id,
-          wc.full_name,
-          wc.business_name,
-          wc.business_type,
-          wc.email,
-          wc.phone,
-          wc.role,
-          wc.is_active,
-          wc.plan_tier,
-          wc.payment_status,
-          wc.bot_enabled,
-          wc.api_key,
-          wc.created_at,
+          wc.id, wc.tenant_id, wc.full_name, wc.business_name, wc.business_type, wc.email,
+          wc.phone, wc.role, wc.is_active, wc.plan_tier, wc.payment_status, wc.bot_enabled,
+          wc.api_key, wc.created_at,
           COALESCE(p_agg.product_count, 0)::int AS product_count,
           COALESCE(u_agg.api_calls, 0)::int AS api_calls,
           (COALESCE(u_agg.chatbot_msgs, 0) + COALESCE(o_agg.bot_queries, 0))::int AS chatbot_msgs,
@@ -1304,9 +1388,7 @@ app.get("/api/admin/overview", requireAuth, requireSuperadmin, async (_req, res)
           COALESCE(u_agg.tokens_used, 0)::int AS tokens_used
         FROM web_clients wc
         LEFT JOIN (
-          SELECT tenant_id, COUNT(*)::int AS product_count
-          FROM products WHERE is_active = true
-          GROUP BY tenant_id
+          SELECT tenant_id, COUNT(*)::int AS product_count FROM products WHERE is_active = true GROUP BY tenant_id
         ) p_agg ON p_agg.tenant_id = wc.tenant_id
         LEFT JOIN (
           SELECT tenant_id,
@@ -1314,13 +1396,10 @@ app.get("/api/admin/overview", requireAuth, requireSuperadmin, async (_req, res)
             COUNT(*) FILTER (WHERE metric_type = 'CHATBOT_MSG')::int AS chatbot_msgs,
             COUNT(*) FILTER (WHERE metric_type = 'BANK_VERIFY')::int AS bank_verifies,
             COALESCE(SUM(tokens_used), 0)::int AS tokens_used
-          FROM usage_metrics
-          GROUP BY tenant_id
+          FROM usage_metrics GROUP BY tenant_id
         ) u_agg ON u_agg.tenant_id = wc.tenant_id
         LEFT JOIN (
-          SELECT tenant_id, COUNT(*)::int AS bot_queries
-          FROM operation_logs WHERE operation = 'CHATBOT_QUERY'
-          GROUP BY tenant_id
+          SELECT tenant_id, COUNT(*)::int AS bot_queries FROM operation_logs WHERE operation = 'CHATBOT_QUERY' GROUP BY tenant_id
         ) o_agg ON o_agg.tenant_id = wc.tenant_id
         ORDER BY (COALESCE(u_agg.api_calls, 0) + COALESCE(u_agg.chatbot_msgs, 0) + COALESCE(o_agg.bot_queries, 0)) DESC, wc.created_at DESC
       `),
@@ -1331,39 +1410,23 @@ app.get("/api/admin/overview", requireAuth, requireSuperadmin, async (_req, res)
           COALESCE(COUNT(um.id) FILTER (WHERE um.metric_type = 'CHATBOT_MSG'), 0)::int AS chatbot_msgs
         FROM generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, INTERVAL '1 day') AS d(day)
         LEFT JOIN usage_metrics um ON DATE(um.created_at) = DATE(d.day)
-        GROUP BY d.day
-        ORDER BY d.day ASC
+        GROUP BY d.day ORDER BY d.day ASC
       `),
       pool.query(`
         SELECT ol.id, ol.operation, ol.description, ol.created_at, t.name AS tenant_name
-        FROM operation_logs ol
-        LEFT JOIN tenants t ON t.id = ol.tenant_id
-        ORDER BY ol.created_at DESC
-        LIMIT 25
+        FROM operation_logs ol LEFT JOIN tenants t ON t.id = ol.tenant_id
+        ORDER BY ol.created_at DESC LIMIT 25
       `),
       pool.query(`SELECT * FROM bank_integrations WHERE scope = 'GLOBAL' LIMIT 1`)
     ]);
 
     const companies = companiesRes.rows.map((r) => ({
-      id: r.id,
-      tenantId: r.tenant_id,
-      fullName: r.full_name,
-      businessName: r.business_name,
-      businessType: r.business_type,
-      email: r.email,
-      phone: r.phone,
-      role: r.role,
-      isActive: r.is_active !== false,
-      planTier: r.plan_tier,
-      paymentStatus: r.payment_status,
-      botEnabled: r.bot_enabled,
-      apiKey: r.api_key,
-      productCount: r.product_count,
-      apiCalls: r.api_calls,
-      chatbotMsgs: r.chatbot_msgs,
-      bankVerifies: r.bank_verifies,
-      tokensUsed: r.tokens_used,
-      totalUsage: r.api_calls + r.chatbot_msgs + r.bank_verifies,
+      id: r.id, tenantId: r.tenant_id, fullName: r.full_name, businessName: r.business_name,
+      businessType: r.business_type, email: r.email, phone: r.phone, role: r.role,
+      isActive: r.is_active !== false, planTier: r.plan_tier, paymentStatus: r.payment_status,
+      botEnabled: r.bot_enabled, apiKey: r.api_key, productCount: r.product_count,
+      apiCalls: r.api_calls, chatbotMsgs: r.chatbot_msgs, bankVerifies: r.bank_verifies,
+      tokensUsed: r.tokens_used, totalUsage: r.api_calls + r.chatbot_msgs + r.bank_verifies,
       createdAt: r.created_at
     }));
 
@@ -1378,23 +1441,12 @@ app.get("/api/admin/overview", requireAuth, requireSuperadmin, async (_req, res)
         acc.plans[c.planTier] = (acc.plans[c.planTier] || 0) + 1;
         return acc;
       },
-      {
-        totalUsers: 0,
-        superadmins: 0,
-        activeBots: 0,
-        totalApiCalls: 0,
-        totalChatbotMsgs: 0,
-        totalProducts: 0,
-        plans: { ESTANDAR: 0, PRO: 0, GOLD: 0 }
-      }
+      { totalUsers: 0, superadmins: 0, activeBots: 0, totalApiCalls: 0, totalChatbotMsgs: 0, totalProducts: 0, plans: { ESTANDAR: 0, PRO: 0, GOLD: 0 } }
     );
 
     res.json({
-      success: true,
-      totals,
-      companies,
-      dailyTrend: dailyRes.rows,
-      recentLogs: logsRes.rows,
+      success: true, totals, companies,
+      dailyTrend: dailyRes.rows, recentLogs: logsRes.rows,
       globalBank: sanitizeBankConfig(globalBankRes.rows[0] || null),
       bankProviders: BANK_PROVIDERS
     });
@@ -1403,27 +1455,16 @@ app.get("/api/admin/overview", requireAuth, requireSuperadmin, async (_req, res)
   }
 });
 
-// Crear otro Superusuario o usuario común desde el Panel Admin
 app.post("/api/admin/users", requireAuth, requireSuperadmin, async (req, res) => {
   const {
-    fullName,
-    businessName,
-    businessType = "RETAIL",
-    email,
-    phone = "",
-    password,
-    confirmPassword,
-    role = "USER",
-    planTier = "PRO",
-    paymentStatus = "PAID"
+    fullName, businessName, businessType = "RETAIL", email, phone = "",
+    password, confirmPassword, role = "USER", planTier = "PRO", paymentStatus = "PAID"
   } = req.body || {};
 
   if (!fullName || !businessName || !email || !password) {
     return res.status(400).json({ success: false, error: "Completa nombre, empresa, correo y contraseña." });
   }
-  if (String(password).length < 6) {
-    return res.status(400).json({ success: false, error: "La contraseña debe tener mínimo 6 caracteres." });
-  }
+  if (String(password).length < 6) return res.status(400).json({ success: false, error: "Mínimo 6 caracteres." });
   if (typeof confirmPassword !== "undefined" && String(password) !== String(confirmPassword)) {
     return res.status(400).json({ success: false, error: "Las contraseñas no coinciden." });
   }
@@ -1437,32 +1478,16 @@ app.post("/api/admin/users", requireAuth, requireSuperadmin, async (req, res) =>
       await db.query("ROLLBACK");
       return res.status(409).json({ success: false, error: "Ese correo ya está registrado." });
     }
-
     const row = await createAccountInDb(db, {
-      fullName,
-      businessName,
-      businessType,
-      email: normalizedEmail,
-      phone,
-      password,
-      role,
-      planTier,
-      paymentStatus
+      fullName, businessName, businessType, email: normalizedEmail, phone, password, role, planTier, paymentStatus
     });
-
     await db
       .query(
         `INSERT INTO operation_logs (id, tenant_id, operation, description, metadata, created_at)
          VALUES ($1, $2, 'ADMIN_USER_CREATED', $3, $4::jsonb, NOW())`,
-        [
-          uuidv4(),
-          req.client.tenant_id,
-          `Superadmin creó cuenta ${row.role}: ${row.email} (${row.business_name})`,
-          JSON.stringify({ createdEmail: row.email, role: row.role, planTier: row.plan_tier })
-        ]
+        [uuidv4(), req.client.tenant_id, `Superadmin creó ${row.role}: ${row.email}`, JSON.stringify({ role: row.role, planTier: row.plan_tier })]
       )
       .catch(() => {});
-
     await db.query("COMMIT");
     res.status(201).json({ success: true, user: sanitizeClient(row) });
   } catch (err) {
@@ -1473,58 +1498,38 @@ app.post("/api/admin/users", requireAuth, requireSuperadmin, async (req, res) =>
   }
 });
 
-// Editar usuario (rol, plan, estado activo, bot ON/OFF, pago o resetear clave)
 app.patch("/api/admin/users/:id", requireAuth, requireSuperadmin, async (req, res) => {
   try {
     const targetId = req.params.id;
     const { role, isActive, planTier, paymentStatus, botEnabled, newPassword } = req.body || {};
-
     const targetRes = await pool.query(`SELECT * FROM web_clients WHERE id = $1 LIMIT 1`, [targetId]);
-    if (!targetRes.rows.length) {
-      return res.status(404).json({ success: false, error: "Usuario no encontrado." });
-    }
+    if (!targetRes.rows.length) return res.status(404).json({ success: false, error: "Usuario no encontrado." });
     const target = targetRes.rows[0];
 
-    if (target.id === req.client.id && isActive === false) {
-      return res.status(400).json({ success: false, error: "No puedes suspender tu propia sesión Superadmin." });
-    }
-    if (target.id === req.client.id && role && role !== "SUPERADMIN") {
-      return res.status(400).json({ success: false, error: "No puedes quitarte el rol Superadmin a ti mismo." });
-    }
+    if (target.id === req.client.id && isActive === false) return res.status(400).json({ success: false, error: "No puedes suspender tu propia cuenta." });
+    if (target.id === req.client.id && role && role !== "SUPERADMIN") return res.status(400).json({ success: false, error: "No puedes quitarte el rol Superadmin." });
 
     const nextRole = role ? (String(role).toUpperCase() === "SUPERADMIN" ? "SUPERADMIN" : "USER") : target.role;
     const nextActive = typeof isActive === "boolean" ? isActive : target.is_active;
-    const nextPlan = planTier && ["ESTANDAR", "PRO", "GOLD"].includes(String(planTier).toUpperCase())
-      ? String(planTier).toUpperCase()
-      : target.plan_tier;
+    const nextPlan = planTier && ["ESTANDAR", "PRO", "GOLD"].includes(String(planTier).toUpperCase()) ? String(planTier).toUpperCase() : target.plan_tier;
     const nextPay = paymentStatus ? String(paymentStatus).toUpperCase() : target.payment_status;
     const nextBot = typeof botEnabled === "boolean" ? botEnabled : target.bot_enabled;
-    const nextPassHash = newPassword && String(newPassword).length >= 6
-      ? await hashPassword(String(newPassword))
-      : target.password_hash;
+    const nextPassHash = newPassword && String(newPassword).length >= 6 ? await hashPassword(String(newPassword)) : target.password_hash;
 
     const updated = await pool.query(
-      `UPDATE web_clients
-       SET role = $1, is_active = $2, plan_tier = $3, payment_status = $4,
-           bot_enabled = $5, password_hash = $6, updated_at = NOW()
-       WHERE id = $7
-       RETURNING *`,
+      `UPDATE web_clients SET role = $1, is_active = $2, plan_tier = $3, payment_status = $4,
+       bot_enabled = $5, password_hash = $6, updated_at = NOW() WHERE id = $7 RETURNING *`,
       [nextRole, nextActive, nextPlan, nextPay, nextBot, nextPassHash, targetId]
     );
-
-    const prismaPlan = nextPlan === "ESTANDAR" ? "LITE" : "PRO";
-    await pool.query(
-      `UPDATE tenants SET plan = $1::"PlanType", whatsapp_enabled = $2, updated_at = NOW() WHERE id = $3`,
-      [prismaPlan, nextBot, target.tenant_id]
-    );
-
+    await pool.query(`UPDATE tenants SET plan = $1::"PlanType", whatsapp_enabled = $2, updated_at = NOW() WHERE id = $3`, [
+      nextPlan === "ESTANDAR" ? "LITE" : "PRO", nextBot, target.tenant_id
+    ]);
     res.json({ success: true, user: sanitizeClient(updated.rows[0]) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Rotar API Key de una empresa
 app.post("/api/admin/users/:id/rotate-key", requireAuth, requireSuperadmin, async (req, res) => {
   try {
     const targetRes = await pool.query(`SELECT * FROM web_clients WHERE id = $1 LIMIT 1`, [req.params.id]);
@@ -1532,31 +1537,19 @@ app.post("/api/admin/users/:id/rotate-key", requireAuth, requireSuperadmin, asyn
     const target = targetRes.rows[0];
     const newSecret = crypto.randomBytes(32).toString("hex");
     const newKey = generateTenantApiKey(target.tenant_id, newSecret);
-
-    await pool.query(`UPDATE tenants SET webhook_secret = $1, updated_at = NOW() WHERE id = $2`, [
-      newSecret,
-      target.tenant_id
-    ]);
-    const updated = await pool.query(
-      `UPDATE web_clients SET api_key = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
-      [newKey, target.id]
-    );
-
+    await pool.query(`UPDATE tenants SET webhook_secret = $1, updated_at = NOW() WHERE id = $2`, [newSecret, target.tenant_id]);
+    const updated = await pool.query(`UPDATE web_clients SET api_key = $1, updated_at = NOW() WHERE id = $2 RETURNING *`, [newKey, target.id]);
     res.json({ success: true, user: sanitizeClient(updated.rows[0]) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Eliminar cuenta/empresa (excepto la propia)
 app.delete("/api/admin/users/:id", requireAuth, requireSuperadmin, async (req, res) => {
   try {
-    if (req.params.id === req.client.id) {
-      return res.status(400).json({ success: false, error: "No puedes eliminar tu propia cuenta Superadmin." });
-    }
+    if (req.params.id === req.client.id) return res.status(400).json({ success: false, error: "No puedes eliminar tu propia cuenta." });
     const target = await pool.query(`SELECT tenant_id, email FROM web_clients WHERE id = $1 LIMIT 1`, [req.params.id]);
     if (!target.rows.length) return res.status(404).json({ success: false, error: "Usuario no encontrado." });
-
     await pool.query(`DELETE FROM tenants WHERE id = $1`, [target.rows[0].tenant_id]);
     res.json({ success: true, deletedEmail: target.rows[0].email });
   } catch (err) {
@@ -1564,21 +1557,12 @@ app.delete("/api/admin/users/:id", requireAuth, requireSuperadmin, async (req, r
   }
 });
 
-// Configuración Global de API Bancaria (para que todos los bots vendidos validen Pago Móvil)
 app.put("/api/admin/bank-global", requireAuth, requireSuperadmin, async (req, res) => {
   try {
     const {
-      provider = "MERCANTIL",
-      verificationMode = "MANUAL",
-      apiBaseUrl = "",
-      apiKey,
-      clientSecret,
-      merchantId = "",
-      accountPhone = "",
-      accountRif = "",
-      autoApprove = true
+      provider = "MERCANTIL", verificationMode = "MANUAL", apiBaseUrl = "", apiKey, clientSecret,
+      merchantId = "", accountPhone = "", accountRif = "", autoApprove = true
     } = req.body || {};
-
     const safeProvider = BANK_PROVIDERS[String(provider).toUpperCase()] ? String(provider).toUpperCase() : "MERCANTIL";
     const safeMode = ["MANUAL", "BANK_API", "SIMULATED"].includes(String(verificationMode).toUpperCase())
       ? String(verificationMode).toUpperCase()
@@ -1594,19 +1578,12 @@ app.put("/api/admin/bank-global", requireAuth, requireSuperadmin, async (req, re
              client_secret = COALESCE(NULLIF($5, ''), client_secret),
              merchant_id = $6, account_phone = $7, account_rif = $8,
              auto_approve = $9, updated_at = NOW()
-         WHERE id = $10
-         RETURNING *`,
+         WHERE id = $10 RETURNING *`,
         [
-          safeProvider,
-          safeMode,
-          String(apiBaseUrl).trim(),
-          apiKey ? String(apiKey).trim() : "",
-          clientSecret ? String(clientSecret).trim() : "",
-          String(merchantId).trim(),
-          String(accountPhone).trim(),
-          String(accountRif).trim(),
-          Boolean(autoApprove),
-          existing.rows[0].id
+          safeProvider, safeMode, String(apiBaseUrl).trim(),
+          apiKey ? String(apiKey).trim() : "", clientSecret ? String(clientSecret).trim() : "",
+          String(merchantId).trim(), String(accountPhone).trim(), String(accountRif).trim(),
+          Boolean(autoApprove), existing.rows[0].id
         ]
       );
     } else {
@@ -1614,19 +1591,11 @@ app.put("/api/admin/bank-global", requireAuth, requireSuperadmin, async (req, re
         `INSERT INTO bank_integrations
           (id, tenant_id, scope, provider, verification_mode, api_base_url, api_key, client_secret,
            merchant_id, account_phone, account_rif, auto_approve, updated_at)
-         VALUES ($1, NULL, 'GLOBAL', $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-         RETURNING *`,
+         VALUES ($1, NULL, 'GLOBAL', $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()) RETURNING *`,
         [
-          uuidv4(),
-          safeProvider,
-          safeMode,
-          String(apiBaseUrl).trim(),
-          apiKey ? String(apiKey).trim() : null,
-          clientSecret ? String(clientSecret).trim() : null,
-          String(merchantId).trim(),
-          String(accountPhone).trim(),
-          String(accountRif).trim(),
-          Boolean(autoApprove)
+          uuidv4(), safeProvider, safeMode, String(apiBaseUrl).trim(),
+          apiKey ? String(apiKey).trim() : null, clientSecret ? String(clientSecret).trim() : null,
+          String(merchantId).trim(), String(accountPhone).trim(), String(accountRif).trim(), Boolean(autoApprove)
         ]
       );
     }
@@ -1637,7 +1606,7 @@ app.put("/api/admin/bank-global", requireAuth, requireSuperadmin, async (req, re
 });
 
 // ============================================================================
-// ARCHIVOS ESTÁTICOS (BLOQUEANDO ARCHIVOS PRIVADOS)
+// SERVIR FRONTEND ESTÁTICO (BLOQUEANDO ARCHIVOS SENSIBLES)
 // ============================================================================
 const STATIC_ROOT = path.resolve(__dirname, "..");
 
@@ -1648,8 +1617,10 @@ app.use((req, res, next) => {
     lower.startsWith("/server") ||
     lower.startsWith("/db") ||
     lower.startsWith("/node_modules") ||
+    lower.startsWith("/.wwebjs") ||
     lower.includes("package.json") ||
-    lower.includes("package-lock.json")
+    lower.includes("package-lock.json") ||
+    lower.includes("dockerfile")
   ) {
     return res.status(403).send("Forbidden");
   }
@@ -1658,14 +1629,22 @@ app.use((req, res, next) => {
 
 app.use(express.static(STATIC_ROOT));
 
-ensureSchemaAndSeed()
-  .then(() => {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Ckekea Web Platform + Superadmin + Bank API corriendo en http://localhost:${PORT}`);
-      console.log(`Railway Bot conectado: ${RAILWAY_BOT_URL}`);
+// ============================================================================
+// ARRANQUE RESILIENTE (NUNCA ENTRA EN CRASH-LOOP EN RAILWAY)
+// ============================================================================
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`[Server] Ckekea Standalone escuchando en http://0.0.0.0:${PORT}`);
+
+  ensureSchemaAndSeed()
+    .then(() => {
+      // Iniciar bot WhatsApp embebido en segundo plano
+      whatsappBot.initialize().catch((err) => {
+        console.warn("[WhatsAppBot] Inicio diferido:", err.message);
+      });
+    })
+    .catch((err) => {
+      dbReady = false;
+      dbLastError = err.message;
+      console.error("[DB] Error conectando a Neon (el servidor web sigue activo):", err.message);
     });
-  })
-  .catch((err) => {
-    console.error("Error iniciando servidor:", err.message);
-    process.exit(1);
-  });
+});

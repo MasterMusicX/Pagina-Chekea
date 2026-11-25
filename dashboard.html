@@ -37,9 +37,9 @@
             <span class="btn-power__dot"></span>
             <span id="dashBotToggleText">Apagar Bot</span>
           </button>
-          <a href="https://chatbot-apirest-production.up.railway.app/" target="_blank" rel="noopener noreferrer" class="btn btn--glass btn--sm" id="dashOpenRailwayBtn">
-            Panel Railway ›
-          </a>
+          <button type="button" class="btn btn--glass btn--sm" id="dashRestartBotBtn">
+            Reiniciar WhatsApp
+          </button>
           <button type="button" class="btn btn--ghost btn--sm" id="dashLogoutBtn">Cerrar sesión</button>
         </div>
       </div>
@@ -73,7 +73,7 @@
 
         <!-- FILA 2: WHATSAPP QR SYNC + CONFIGURACIÓN DEL BOT -->
         <div class="dash-grid-2">
-          <!-- Tarjeta de Sincronización WhatsApp QR (como chatbot-apirest-production.up.railway.app) -->
+          <!-- Tarjeta de Sincronización WhatsApp QR (motor independiente) -->
           <div class="dash-card dash-card--dark">
             <div class="dash-card__head">
               <div>
@@ -94,7 +94,7 @@
 
               <div class="dash-wa-controls">
                 <p id="dashWaHelpText">
-                  Conectado al servidor de bots en <code>chatbot-apirest-production.up.railway.app</code>. Puedes encender o apagar el bot a voluntad con el botón superior o vincular por código numérico.
+                  Motor de WhatsApp <strong>100% independiente</strong> corriendo dentro de este mismo servidor. Escanea el QR para vincular tu número o solicita un código numérico.
                 </p>
 
                 <form id="dashPairingForm" class="dash-inline-form">
@@ -104,9 +104,9 @@
                 <div class="dash-pairing-out" id="dashPairingOut" hidden></div>
 
                 <div class="dash-wa-links">
-                  <a href="https://chatbot-apirest-production.up.railway.app/" target="_blank" rel="noopener noreferrer" class="btn btn--whatsapp btn--sm">
-                    Abrir Panel Completo en Railway ›
-                  </a>
+                  <button type="button" class="btn btn--whatsapp btn--sm" id="dashRestartWaInlineBtn">
+                    Generar nuevo QR WhatsApp
+                  </button>
                   <button type="button" class="btn btn--glass btn--sm" id="dashDownloadEnvBtn">
                     Descargar .env.client-bot
                   </button>
