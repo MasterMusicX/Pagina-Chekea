@@ -15,7 +15,19 @@
 
 const path = require("path");
 const crypto = require("crypto");
+const dns = require("dns");
+if (typeof dns.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
+}
 require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
+
+// Proteger el proceso Node 20 contra rechazos asíncronos de Puppeteer/WhatsApp (evita 502 Bad Gateway)
+process.on("unhandledRejection", (reason) => {
+  console.error("[Guard] UnhandledRejection capturado (servidor sigue activo):", reason && reason.message ? reason.message : reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[Guard] UncaughtException capturado (servidor sigue activo):", err && err.message ? err.message : err);
+});
 
 const express = require("express");
 const cors = require("cors");
@@ -1630,17 +1642,21 @@ app.use((req, res, next) => {
 app.use(express.static(STATIC_ROOT));
 
 // ============================================================================
-// ARRANQUE RESILIENTE (NUNCA ENTRA EN CRASH-LOOP EN RAILWAY)
+// ARRANQUE RESILIENTE (NUNCA ENTRA EN CRASH-LOOP NI PRODUCE 502 EN RAILWAY)
 // ============================================================================
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`[Server] Ckekea Standalone escuchando en http://0.0.0.0:${PORT}`);
+  console.log(`[Server] Ckekea Standalone escuchando en http://0.0.0.0:${PORT} (env.PORT=${process.env.PORT || "default:3000"})`);
 
   ensureSchemaAndSeed()
     .then(() => {
-      // Iniciar bot WhatsApp embebido en segundo plano
-      whatsappBot.initialize().catch((err) => {
-        console.warn("[WhatsAppBot] Inicio diferido:", err.message);
-      });
+      // Esperar 5s para que Railway valide el healthcheck HTTP antes de lanzar Chromium
+      if (process.env.WHATSAPP_ENABLED !== "false") {
+        setTimeout(() => {
+          whatsappBot.initialize().catch((err) => {
+            console.warn("[WhatsAppBot] Inicio diferido:", err.message);
+          });
+        }, 5000);
+      }
     })
     .catch((err) => {
       dbReady = false;

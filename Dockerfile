@@ -37,6 +37,4 @@ COPY . .
 
 RUN mkdir -p .wwebjs_auth
 
-EXPOSE 3000
-
 CMD ["npm", "start"]

@@ -1,15 +1,22 @@
 /**
  * ============================================================================
- * CKEKEA — MOTOR INDEPENDIENTE DE WHATSAPP BOT (whatsapp-web.js + QR + PAIRING)
+ * CKEKEA — MOTOR INDEPENDIENTE DE WHATSAPP BOT (whatsapp-web.js ^1.34.8)
  * ============================================================================
- * Corre 100% embebido dentro de este mismo servidor Railway sin depender de
- * ningún enlace externo. Tolerante a fallos: si Chromium no está instalado en
- * local o WHATSAPP_ENABLED=false, el servidor web sigue funcionando sin caerse.
+ * Optimizado para contenedores Railway (Node 20 + Chromium):
+ *  - Timeout ampliado (120s) para evitar "Waiting failed: 30000ms exceeded"
+ *  - IPv4-first DNS para conexiones estables con WhatsApp Web
+ *  - Limpieza automática de procesos Chromium en caso de error (sin fugas RAM)
+ *  - Nunca tumba el servidor web Express si WhatsApp tarda o falla
  */
 
 "use strict";
 
 const fs = require("fs");
+const dns = require("dns");
+
+if (typeof dns.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
+}
 
 function detectChromiumPath() {
   const candidates = [
@@ -17,6 +24,7 @@ function detectChromiumPath() {
     process.env.CHROME_BIN,
     "/usr/bin/chromium",
     "/usr/bin/chromium-browser",
+    "/usr/bin/google-chrome-stable",
     "/usr/bin/google-chrome"
   ].filter(Boolean);
   return candidates.find((p) => {
@@ -62,6 +70,17 @@ class StandaloneWhatsAppBot {
     };
   }
 
+  async cleanupClient() {
+    if (!this.client) return;
+    const old = this.client;
+    this.client = null;
+    try {
+      await old.destroy();
+    } catch {
+      // ignorar error al cerrar proceso huérfano
+    }
+  }
+
   async initialize() {
     if (process.env.WHATSAPP_ENABLED === "false") {
       this.status = "DISABLED";
@@ -78,7 +97,7 @@ class StandaloneWhatsAppBot {
       QRCode = require("qrcode");
     } catch (err) {
       this.status = "ERROR";
-      this.lastError = "Paquetes whatsapp-web.js/qrcode no instalados todavía (" + err.message + ")";
+      this.lastError = "Paquetes whatsapp-web.js/qrcode no instalados (" + err.message + ")";
       this.initializing = false;
       console.warn("[WhatsAppBot]", this.lastError);
       return;
@@ -87,20 +106,24 @@ class StandaloneWhatsAppBot {
     const executablePath = detectChromiumPath();
     if (!executablePath && process.env.NODE_ENV !== "production") {
       this.status = "DISCONNECTED";
-      this.lastError = "Chromium no detectado en este equipo local. En Railway (Dockerfile) se activa automáticamente.";
+      this.lastError = "Chromium no detectado en local. En Railway (Dockerfile) se activa automáticamente.";
       this.initializing = false;
       console.log("[WhatsAppBot]", this.lastError);
       return;
     }
 
+    await this.cleanupClient();
     this.status = "INITIALIZING";
     this.qrRaw = null;
     this.qrBase64 = null;
 
     try {
       const { Client, LocalAuth } = wwebjs;
+      const botDigits = String(process.env.WHATSAPP_BOT_NUMBER || "584166214410").replace(/\D/g, "");
       const puppeteerOpts = {
         headless: true,
+        timeout: 120000,
+        protocolTimeout: 120000,
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
@@ -108,20 +131,28 @@ class StandaloneWhatsAppBot {
           "--disable-accelerated-2d-canvas",
           "--no-first-run",
           "--no-zygote",
-          "--disable-gpu"
+          "--disable-gpu",
+          "--disable-extensions",
+          "--disable-background-networking",
+          "--disable-default-apps",
+          "--mute-audio"
         ]
       };
       if (executablePath) puppeteerOpts.executablePath = executablePath;
 
-      this.client = new Client({
+      const client = new Client({
         authStrategy: new LocalAuth({
-          clientId: "ckekea-standalone-max",
+          clientId: `ckekea-${botDigits || "max"}`,
           dataPath: this.sessionPath
         }),
+        authTimeoutMs: 120000,
+        qrMaxRetries: 8,
         puppeteer: puppeteerOpts
       });
 
-      this.client.on("qr", async (qr) => {
+      this.client = client;
+
+      client.on("qr", async (qr) => {
         this.qrRaw = qr;
         this.status = "QR_READY";
         this.lastError = null;
@@ -130,17 +161,17 @@ class StandaloneWhatsAppBot {
         } catch {
           this.qrBase64 = null;
         }
-        console.log("[WhatsAppBot] Nuevo código QR listo en el Dashboard.");
+        console.log("[WhatsAppBot] Código QR listo en /dashboard.html");
       });
 
-      this.client.on("ready", () => {
+      client.on("ready", () => {
         this.status = "READY";
         this.qrRaw = null;
         this.qrBase64 = null;
         this.lastError = null;
         try {
           this.connectedPhone =
-            (this.client.info && this.client.info.wid && this.client.info.wid.user) ||
+            (client.info && client.info.wid && client.info.wid.user) ||
             process.env.WHATSAPP_BOT_NUMBER ||
             null;
         } catch {
@@ -149,24 +180,24 @@ class StandaloneWhatsAppBot {
         console.log("[WhatsAppBot] WhatsApp conectado y listo:", this.connectedPhone);
       });
 
-      this.client.on("authenticated", () => {
+      client.on("authenticated", () => {
         console.log("[WhatsAppBot] Sesión autenticada correctamente.");
       });
 
-      this.client.on("auth_failure", (msg) => {
+      client.on("auth_failure", (msg) => {
         this.status = "ERROR";
         this.lastError = "Fallo de autenticación WhatsApp: " + msg;
         console.error("[WhatsAppBot]", this.lastError);
       });
 
-      this.client.on("disconnected", (reason) => {
+      client.on("disconnected", (reason) => {
         this.status = "DISCONNECTED";
         this.connectedPhone = null;
         this.lastError = "Desconectado: " + reason;
         console.warn("[WhatsAppBot] Desconectado:", reason);
       });
 
-      this.client.on("message", async (msg) => {
+      client.on("message", async (msg) => {
         try {
           if (!this.active) return;
           if (!msg || msg.fromMe) return;
@@ -189,15 +220,17 @@ class StandaloneWhatsAppBot {
         }
       });
 
-      this.client.initialize().catch((err) => {
+      client.initialize().catch(async (err) => {
         this.status = "ERROR";
-        this.lastError = err.message;
-        console.error("[WhatsAppBot] Error inicializando Puppeteer/WhatsApp:", err.message);
+        this.lastError = err && err.message ? err.message : String(err);
+        console.error("[WhatsAppBot] Error inicializando WhatsApp:", this.lastError);
+        await this.cleanupClient();
       });
     } catch (err) {
       this.status = "ERROR";
-      this.lastError = err.message;
-      console.error("[WhatsAppBot] Error creando cliente:", err.message);
+      this.lastError = err && err.message ? err.message : String(err);
+      console.error("[WhatsAppBot] Error creando cliente:", this.lastError);
+      await this.cleanupClient();
     } finally {
       this.initializing = false;
     }
@@ -209,21 +242,14 @@ class StandaloneWhatsAppBot {
       throw new Error("Número inválido. Usa formato internacional sin +, ej: 584166214410.");
     }
     if (!this.client || typeof this.client.requestPairingCode !== "function") {
-      throw new Error("El motor de WhatsApp aún está inicializando o no soporta código en este estado. Escanea el QR en pantalla.");
+      throw new Error("El motor de WhatsApp está inicializando. Pulsa 'Generar nuevo QR' y espera unos segundos.");
     }
     const code = await this.client.requestPairingCode(cleanPhone);
     return { phone: cleanPhone, pairingCode: code };
   }
 
   async restart() {
-    if (this.client) {
-      try {
-        await this.client.destroy();
-      } catch {
-        // silencioso
-      }
-      this.client = null;
-    }
+    await this.cleanupClient();
     this.status = "DISCONNECTED";
     this.qrBase64 = null;
     this.qrRaw = null;
