@@ -343,11 +343,11 @@
     const mobileLoginLink = document.getElementById("mobileLoginLink");
     if (navLoginLink && hasJwt) {
       navLoginLink.href = "dashboard.html";
-      navLoginLink.textContent = "Mi Dashboard ✓";
+      navLoginLink.textContent = "Mi Cuenta";
     }
     if (mobileLoginLink && hasJwt) {
       mobileLoginLink.href = "dashboard.html";
-      mobileLoginLink.textContent = "Ir a Mi Dashboard ✓";
+      mobileLoginLink.textContent = "Ir a Mi Cuenta";
     }
     const navAccessBtn = document.getElementById("navAccessBtn");
 

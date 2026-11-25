@@ -1,15 +1,12 @@
 /**
  * ============================================================================
- * CKEKEA — SHELL COMPARTIDO MULTIPÁGINA (NAVBAR, FOOTER, DOCK Y MODALES)
+ * CKEKEA — SHELL COMPARTIDO MULTIPÁGINA (WEB PÚBLICA vs ESPACIO PRIVADO)
  * ============================================================================
- * Inyecta automáticamente la navegación entre páginas, el pie de página,
- * el dock flotante de Max (+58 416-6214410) y los modales (Pasarela Pago Móvil,
- * Fundadores, Contacto WhatsApp y Desbloqueo con API Key) en todas las páginas:
- *   - index.html
- *   - chatbot.html
- *   - planes.html
- *   - api-studio.html
- *   - fundadores.html
+ * - En páginas públicas (index, chatbot, planes, api-studio, fundadores, login):
+ *   Muestra el menú comercial limpio (SIN "Dashboard" ni "Admin").
+ * - En el espacio privado (dashboard.html y admin.html):
+ *   Elimina todas las opciones del menú público y muestra un menú independiente
+ *   solo con "Dashboard Principal" y "Panel Admin" (si es SUPERADMIN).
  */
 
 (function () {
@@ -17,41 +14,104 @@
 
   const BASE = window.CHEKEA_CONFIG;
   const currentPage = (document.body.getAttribute("data-page") || "inicio").toLowerCase();
+  const isPrivateWorkspace = currentPage === "dashboard" || currentPage === "admin";
 
-  const NAV_ITEMS = [
+  function getStoredUser() {
+    try {
+      const raw = localStorage.getItem("ckekea_auth_user_v1");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  const storedUser = getStoredUser();
+  const isSuperadmin = Boolean(storedUser && storedUser.role === "SUPERADMIN");
+
+  const PUBLIC_NAV_ITEMS = [
     { key: "inicio", href: "index.html", label: "Inicio" },
     { key: "chatbot", href: "chatbot.html", label: "Max IA" },
     { key: "planes", href: "planes.html", label: "Planes" },
     { key: "api-studio", href: "api-studio.html", label: "API Studio" },
-    { key: "fundadores", href: "fundadores.html", label: "Fundadores" },
-    { key: "dashboard", href: "dashboard.html", label: "Dashboard" }
+    { key: "fundadores", href: "fundadores.html", label: "Fundadores" }
   ];
 
-  // Si la sesión actual pertenece a un SUPERADMIN, añadir acceso rápido al Panel Admin
-  try {
-    const rawUser = localStorage.getItem("ckekea_auth_user_v1");
-    if (rawUser) {
-      const parsedUser = JSON.parse(rawUser);
-      if (parsedUser && parsedUser.role === "SUPERADMIN") {
-        NAV_ITEMS.push({ key: "admin", href: "admin.html", label: "Admin" });
-      }
-    }
-  } catch {
-    // silencioso
+  const PRIVATE_NAV_ITEMS = [
+    { key: "dashboard", href: "dashboard.html", label: "Dashboard Principal" }
+  ];
+  if (isSuperadmin || currentPage === "admin") {
+    PRIVATE_NAV_ITEMS.push({ key: "admin", href: "admin.html", label: "Panel Admin" });
   }
 
-  function renderNavLinks(isMobile) {
-    return NAV_ITEMS.map((item) => {
-      const active = item.key === currentPage ? ' class="is-active" aria-current="page"' : "";
-      const label = isMobile && item.key === "planes" ? "Planes Estándar, Pro y Gold" : item.label;
-      return `<a href="${item.href}"${active}>${label}</a>`;
-    }).join("");
+  function renderNavLinks(items, isMobile) {
+    return items
+      .map((item) => {
+        const active = item.key === currentPage ? ' class="is-active" aria-current="page"' : "";
+        const label = isMobile && item.key === "planes" ? "Planes Estándar, Pro y Gold" : item.label;
+        return `<a href="${item.href}"${active}>${label}</a>`;
+      })
+      .join("");
   }
 
   function injectHeader() {
     const mount = document.getElementById("siteHeader");
     if (!mount) return;
 
+    if (isPrivateWorkspace) {
+      // MENÚ INDEPENDIENTE EXCLUSIVO PARA DASHBOARD PRINCIPAL Y PANEL ADMIN
+      mount.innerHTML = `
+        <header class="navbar navbar--workspace" id="navbar">
+          <div class="container container--workspace navbar__inner">
+            <a href="dashboard.html" class="brand" aria-label="${BASE.brand.name} Workspace">
+              <span class="brand__mark" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="2" width="20" height="20" rx="6" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M8 12.5L10.8 15.3L16.5 9.2" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="brand__name">${BASE.brand.name}</span>
+              <span class="workspace-tag">${isSuperadmin || currentPage === "admin" ? "Admin" : "Workspace"}</span>
+            </a>
+
+            <nav class="nav-links nav-links--workspace" aria-label="Menú del panel">
+              ${renderNavLinks(PRIVATE_NAV_ITEMS, false)}
+            </nav>
+
+            <div class="navbar__actions">
+              <button type="button" class="btn btn--ghost btn--sm" id="workspaceNavLogoutBtn">
+                Cerrar sesión
+              </button>
+              <button type="button" class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+                <span></span>
+                <span></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+            <nav class="mobile-menu__links">
+              ${renderNavLinks(PRIVATE_NAV_ITEMS, true)}
+            </nav>
+            <div class="mobile-menu__actions">
+              <button type="button" class="btn btn--secondary btn--full" id="workspaceMobileLogoutBtn">Cerrar sesión</button>
+            </div>
+          </div>
+        </header>
+      `;
+
+      const doLogout = () => {
+        localStorage.removeItem("ckekea_auth_jwt_v1");
+        localStorage.removeItem("ckekea_auth_user_v1");
+        window.location.href = "login.html";
+      };
+      const b1 = document.getElementById("workspaceNavLogoutBtn");
+      const b2 = document.getElementById("workspaceMobileLogoutBtn");
+      if (b1) b1.addEventListener("click", doLogout);
+      if (b2) b2.addEventListener("click", doLogout);
+      return;
+    }
+
+    // MENÚ PÚBLICO (SIN DASHBOARD EN LA PÁGINA PRINCIPAL)
     mount.innerHTML = `
       <header class="navbar" id="navbar">
         <div class="container navbar__inner">
@@ -66,7 +126,7 @@
           </a>
 
           <nav class="nav-links" aria-label="Navegación principal">
-            ${renderNavLinks(false)}
+            ${renderNavLinks(PUBLIC_NAV_ITEMS, false)}
           </nav>
 
           <div class="navbar__actions">
@@ -85,7 +145,7 @@
 
         <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
           <nav class="mobile-menu__links">
-            ${renderNavLinks(true)}
+            ${renderNavLinks(PUBLIC_NAV_ITEMS, true)}
           </nav>
           <div class="mobile-menu__actions">
             <a href="login.html" class="btn btn--secondary btn--full" id="mobileLoginLink">Iniciar Sesión / Crear Cuenta</a>
@@ -110,6 +170,20 @@
     const mount = document.getElementById("siteFooter");
     if (!mount) return;
 
+    if (isPrivateWorkspace) {
+      mount.innerHTML = `
+        <footer class="footer footer--workspace">
+          <div class="container container--workspace">
+            <div class="footer__bottom" style="padding-top:0;">
+              <p>© <span id="footerYear">${BASE.brand.year}</span> ${BASE.brand.name} · Consola Privada (Neon PostgreSQL + Baileys WhatsApp).</p>
+              <p><a href="index.html" style="color:var(--apple-blue);font-weight:500;">Ir a la web pública ›</a></p>
+            </div>
+          </div>
+        </footer>
+      `;
+      return;
+    }
+
     mount.innerHTML = `
       <footer class="footer">
         <div class="container">
@@ -123,7 +197,6 @@
                 <h4>Páginas</h4>
                 <a href="index.html">Inicio</a>
                 <a href="login.html">Iniciar Sesión / Registro</a>
-                <a href="dashboard.html">Mi Dashboard (Bot e Inventario)</a>
                 <a href="chatbot.html">Max IA &amp; Portal Bot</a>
                 <a href="planes.html">Planes Estándar, Pro y Gold</a>
                 <a href="api-studio.html">API Studio &amp; Webhooks</a>
@@ -147,7 +220,7 @@
           </div>
           <div class="footer__bottom">
             <p>© <span id="footerYear">${BASE.brand.year}</span> ${BASE.brand.name} Venezuela. Seguridad alineada a ISO/IEC 27001:2022 y OWASP API Top 10.</p>
-            <p>Arquitectura multipágina HTML, CSS y JavaScript conectada a Chatbot-ApiRest.</p>
+            <p>Arquitectura multipágina HTML, CSS y JavaScript conectada a Neon PostgreSQL.</p>
           </div>
         </div>
       </footer>
@@ -158,7 +231,9 @@
     const mount = document.getElementById("siteOverlays");
     if (!mount) return;
 
-    mount.innerHTML = `
+    const dockHtml = isPrivateWorkspace
+      ? ""
+      : `
       <!-- Dock flotante: WhatsApp Max (+584166214410) + Consola Rápida de Max -->
       <div class="floating-dock" aria-label="Accesos rápidos">
         <button type="button" class="dock-btn dock-btn--whatsapp" data-open-whatsapp aria-label="Contactar a Max por WhatsApp">
@@ -173,7 +248,7 @@
         </button>
       </div>
 
-      <!-- Ventana flotante del Bot Max (disponible en todas las páginas) -->
+      <!-- Ventana flotante del Bot Max -->
       <aside class="floating-chat" id="floatingChatDrawer" aria-hidden="true">
         <div class="chat-panel__header">
           <div class="chat-agent">
@@ -199,8 +274,12 @@
           </button>
         </form>
       </aside>
+    `;
 
-      <!-- MODAL 1: PASARELA DE PAGO MÓVIL MERCANTIL (OPTIMIZADA PARA MÓVIL ESTILO SHEET FLUIDO) -->
+    mount.innerHTML = `
+      ${dockHtml}
+
+      <!-- MODAL 1: PASARELA DE PAGO MÓVIL MERCANTIL -->
       <div class="modal-backdrop" id="paymentModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
         <div class="modal modal--wide modal--payment">
           <div class="modal-sheet-bar">
@@ -218,7 +297,6 @@
               </div>
 
               <div class="checkout-grid">
-                <!-- Columna izquierda: Datos Mercantil -->
                 <div class="mercantil-card">
                   <div class="mercantil-card__brand">
                     <div>
@@ -269,7 +347,6 @@
                   </div>
                 </div>
 
-                <!-- Columna derecha: Datos del cliente & referencia -->
                 <form id="paymentCheckoutForm" class="checkout-form">
                   <div class="form-row-2">
                     <div class="field-light">
@@ -339,7 +416,6 @@
               </div>
             </div>
 
-            <!-- Paso 2: Éxito + API Key Generada -->
             <div id="paymentStepSuccess" class="payment-success" hidden>
               <div class="success-icon" aria-hidden="true">✓</div>
               <span class="modal-kicker">Pago Registrado · Acceso Activado</span>
@@ -401,7 +477,7 @@
         </div>
       </div>
 
-      <!-- MODAL 3: POP-UP WHATSAPP (BOT MAX +584166214410 Y SOPORTE 0424-6003606) -->
+      <!-- MODAL 3: POP-UP WHATSAPP -->
       <div class="modal-backdrop" id="whatsappModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="whatsappModalTitle">
         <div class="modal modal--compact">
           <div class="modal-sheet-bar">
