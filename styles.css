@@ -877,8 +877,89 @@ pre {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  background: rgba(147, 51, 234, 0.16);
+  color: #6b21a8;
+}
+
+.dash-header--admin .dash-pill--super {
   background: rgba(168, 85, 247, 0.24);
   color: #e9d5ff;
+}
+
+.dash-card--super {
+  border-color: rgba(147, 51, 234, 0.26);
+  background: linear-gradient(175deg, #ffffff 0%, #faf5ff 100%);
+}
+
+.card-kicker--super {
+  color: #7e22ce;
+  opacity: 1;
+}
+
+.super-note {
+  margin: 2px 0 4px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: rgba(147, 51, 234, 0.08);
+  color: #581c87;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.btn--super {
+  background: linear-gradient(135deg, #7e22ce 0%, #5b21b6 100%);
+  color: #fff;
+}
+
+.btn--super:hover {
+  background: linear-gradient(135deg, #6b21a8 0%, #4c1d95 100%);
+  box-shadow: 0 10px 24px rgba(126, 34, 206, 0.32);
+}
+
+/* Botón SVG ojito para mostrar/ocultar contraseña en todos los formularios */
+.password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-wrap input {
+  width: 100%;
+  padding-right: 44px !important;
+}
+
+.password-eye-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: color 0.18s ease, background-color 0.18s ease;
+}
+
+.password-eye-btn:hover {
+  color: var(--apple-blue);
+  background: rgba(0, 113, 227, 0.1);
+}
+
+.dash-card--dark .password-eye-btn,
+.studio-shell .password-eye-btn {
+  color: #a1a1a6;
+}
+
+.dash-card--dark .password-eye-btn:hover,
+.studio-shell .password-eye-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .dash-pill--pay-light {

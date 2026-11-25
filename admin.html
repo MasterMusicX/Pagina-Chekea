@@ -114,33 +114,34 @@
           </div>
         </div>
 
-        <!-- GESTIÓN DE USUARIOS Y SUPERUSUARIOS -->
+        <!-- GESTIÓN SEPARADA: CREAR USUARIO COMÚN vs CREAR SUPERUSUARIO -->
         <div class="dash-grid-2 admin-users-layout">
-          <!-- Crear Usuario o Superusuario -->
+          <!-- Tarjeta 1: Crear Usuario Común (Cliente) -->
           <div class="dash-card">
             <div class="dash-card__head">
               <div>
-                <span class="card-kicker">Control de Accesos</span>
-                <h2>Crear Usuario o Superusuario</h2>
+                <span class="card-kicker">Cuenta Estándar de Cliente</span>
+                <h2>Crear Usuario Común</h2>
               </div>
+              <span class="dash-pill dash-pill--pay-light">USER</span>
             </div>
 
             <form id="adminCreateUserForm" class="dash-form">
               <div class="form-row-2">
                 <div class="field-light">
                   <label for="admNewName">Nombre completo</label>
-                  <input type="text" id="admNewName" placeholder="Ej. Jesús Romero" required />
+                  <input type="text" id="admNewName" placeholder="Ej. Carlos Mendoza" required />
                 </div>
                 <div class="field-light">
                   <label for="admNewBusiness">Empresa / Comercio</label>
-                  <input type="text" id="admNewBusiness" placeholder="Ej. Inversiones Alpha" required />
+                  <input type="text" id="admNewBusiness" placeholder="Ej. Farmacia Central" required />
                 </div>
               </div>
 
               <div class="form-row-2">
                 <div class="field-light">
                   <label for="admNewEmail">Correo electrónico</label>
-                  <input type="email" id="admNewEmail" placeholder="usuario@empresa.com" required />
+                  <input type="email" id="admNewEmail" placeholder="cliente@empresa.com" required />
                 </div>
                 <div class="field-light">
                   <label for="admNewPhone">Teléfono WhatsApp</label>
@@ -148,16 +149,9 @@
                 </div>
               </div>
 
-              <div class="form-row-3">
+              <div class="form-row-2">
                 <div class="field-light">
-                  <label for="admNewRole">Rol del Sistema</label>
-                  <select id="admNewRole">
-                    <option value="USER">Usuario Común</option>
-                    <option value="SUPERADMIN">Superusuario (Admin)</option>
-                  </select>
-                </div>
-                <div class="field-light">
-                  <label for="admNewPlan">Plan</label>
+                  <label for="admNewPlan">Plan asignado</label>
                   <select id="admNewPlan">
                     <option value="ESTANDAR">Estándar</option>
                     <option value="PRO" selected>Pro</option>
@@ -165,12 +159,12 @@
                   </select>
                 </div>
                 <div class="field-light">
-                  <label for="admNewRubro">Rubro</label>
+                  <label for="admNewRubro">Rubro del negocio</label>
                   <select id="admNewRubro">
-                    <option value="RETAIL">Retail</option>
-                    <option value="PHARMACY">Farmacia</option>
+                    <option value="RETAIL">Retail / Comercio</option>
+                    <option value="PHARMACY">Farmacia / Salud</option>
                     <option value="TECH">Tecnología</option>
-                    <option value="HARDWARE">Ferretería</option>
+                    <option value="HARDWARE">Ferretería / Repuestos</option>
                   </select>
                 </div>
               </div>
@@ -186,12 +180,68 @@
                 </div>
               </div>
 
-              <button type="submit" class="btn btn--primary btn--full">Crear Cuenta en Neon DB</button>
+              <button type="submit" class="btn btn--primary btn--full">Crear Usuario Común</button>
             </form>
           </div>
 
-          <!-- Configuración Global de API Bancaria (Plug & Play) -->
-          <div class="dash-card dash-card--dark">
+          <!-- Tarjeta 2: Crear Superusuario (Admin Global) -->
+          <div class="dash-card dash-card--super">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker card-kicker--super">Privilegios Totales del Sistema</span>
+                <h2>Crear Superusuario</h2>
+              </div>
+              <span class="dash-pill dash-pill--super">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                SUPERADMIN
+              </span>
+            </div>
+
+            <form id="adminCreateSuperForm" class="dash-form">
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="admSuperName">Nombre completo</label>
+                  <input type="text" id="admSuperName" placeholder="Ej. Jesús Romero" required />
+                </div>
+                <div class="field-light">
+                  <label for="admSuperBusiness">Organización / Área</label>
+                  <input type="text" id="admSuperBusiness" value="Ckekea Admin" required />
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="admSuperEmail">Correo electrónico</label>
+                  <input type="email" id="admSuperEmail" placeholder="admin@ckekea.io" required />
+                </div>
+                <div class="field-light">
+                  <label for="admSuperPhone">Teléfono WhatsApp</label>
+                  <input type="tel" id="admSuperPhone" placeholder="584246003606" />
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="admSuperPass">Contraseña (mín. 6)</label>
+                  <input type="password" id="admSuperPass" minlength="6" placeholder="••••••••" required />
+                </div>
+                <div class="field-light">
+                  <label for="admSuperPassConfirm">Repetir contraseña</label>
+                  <input type="password" id="admSuperPassConfirm" minlength="6" placeholder="••••••••" required />
+                </div>
+              </div>
+
+              <p class="super-note">
+                Tendrá acceso completo al Panel Admin (usuarios, gráficas de consumo y API Bancaria) además de su propio Dashboard Principal con plan Gold activo.
+              </p>
+
+              <button type="submit" class="btn btn--super btn--full">Crear Superusuario</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- CONFIGURACIÓN GLOBAL DE API BANCARIA -->
+        <div class="dash-card dash-card--dark" style="margin-bottom:24px;">
             <div class="dash-card__head">
               <div>
                 <span class="card-kicker">Conciliación Automática Venezuela</span>
@@ -201,7 +251,7 @@
             </div>
 
             <form id="adminBankForm" class="dash-form">
-              <div class="form-row-2">
+              <div class="form-row-3">
                 <div class="field">
                   <label for="admBankProvider">Banco / Proveedor</label>
                   <select id="admBankProvider">
@@ -221,11 +271,10 @@
                     <option value="SIMULATED">SIMULATED (Pruebas automáticas)</option>
                   </select>
                 </div>
-              </div>
-
-              <div class="field">
-                <label for="admBankUrl">URL Endpoint API del Banco</label>
-                <input type="url" id="admBankUrl" placeholder="https://apimbu.mercantilbanco.com/..." />
+                <div class="field">
+                  <label for="admBankUrl">URL Endpoint API del Banco</label>
+                  <input type="url" id="admBankUrl" placeholder="https://apimbu.mercantilbanco.com/..." />
+                </div>
               </div>
 
               <div class="form-row-2">
@@ -256,7 +305,6 @@
               </div>
               <div class="api-test-output" id="adminBankTestOut" hidden></div>
             </form>
-          </div>
         </div>
 
         <!-- DIRECTORIO COMPLETO DE EMPRESAS Y USUARIOS -->

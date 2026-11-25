@@ -360,7 +360,7 @@
       window.location.href = "login.html";
     });
 
-    // Crear usuario o superusuario
+    // 1. Crear Usuario Común (USER)
     document.getElementById("adminCreateUserForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const password = document.getElementById("admNewPass").value;
@@ -377,7 +377,7 @@
             businessName: document.getElementById("admNewBusiness").value.trim(),
             email: document.getElementById("admNewEmail").value.trim(),
             phone: document.getElementById("admNewPhone").value.trim(),
-            role: document.getElementById("admNewRole").value,
+            role: "USER",
             planTier: document.getElementById("admNewPlan").value,
             businessType: document.getElementById("admNewRubro").value,
             password,
@@ -385,10 +385,44 @@
           })
         });
         e.target.reset();
-        toast("Cuenta creada y cifrada en Neon PostgreSQL");
+        toast("Usuario común creado y cifrado en Neon PostgreSQL");
         await loadOverview();
       } catch (err) {
         toast("Error creando usuario: " + err.message);
+      }
+    });
+
+    // 2. Crear Superusuario (SUPERADMIN)
+    document.getElementById("adminCreateSuperForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const password = document.getElementById("admSuperPass").value;
+      const confirmPassword = document.getElementById("admSuperPassConfirm").value;
+      if (password !== confirmPassword) {
+        toast("Las contraseñas del Superusuario no coinciden");
+        return;
+      }
+      try {
+        await api("/api/admin/users", {
+          method: "POST",
+          body: JSON.stringify({
+            fullName: document.getElementById("admSuperName").value.trim(),
+            businessName: document.getElementById("admSuperBusiness").value.trim() || "Ckekea Admin",
+            email: document.getElementById("admSuperEmail").value.trim(),
+            phone: document.getElementById("admSuperPhone").value.trim(),
+            role: "SUPERADMIN",
+            planTier: "GOLD",
+            businessType: "TECH",
+            paymentStatus: "PAID",
+            password,
+            confirmPassword
+          })
+        });
+        e.target.reset();
+        document.getElementById("admSuperBusiness").value = "Ckekea Admin";
+        toast("Superusuario creado con privilegios totales en Neon DB");
+        await loadOverview();
+      } catch (err) {
+        toast("Error creando Superusuario: " + err.message);
       }
     });
 
