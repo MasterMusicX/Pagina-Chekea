@@ -1,25 +1,51 @@
 /**
  * ============================================================================
- * CHEKEA — CONFIGURACIÓN CENTRAL (FÁCIL DE EDITAR A MANO)
+ * CKEKEA — CONFIGURACIÓN CENTRAL (FÁCIL DE EDITAR A MANO)
  * ============================================================================
- * Conectado a tus dos servicios backend:
- *  1) standalone-chatbot-api.ts  -> API SaaS del Chatbot + Generador de API Keys
- *  2) client-sales-bot.ts        -> Bot Comercial WhatsApp + Panel QR + PDF Semanal
+ * Sincronizado con Chatbot-ApiRest (Max · Ckekea):
+ *  - BOT_NAME="Max"
+ *  - COMPANY_NAME="Ckekea"
+ *  - WHATSAPP_ENABLED=true
+ *  - WHATSAPP_BOT_NUMBER=+584166214410
+ *  - WHATSAPP_SESSION_PATH=.wwebjs_aut
  *
- * Para reemplazar las imágenes de ejemplo:
- * Sustituye los archivos dentro de /assets/ manteniendo el mismo nombre.
+ * También integra los datos de Pago Móvil Venezuela (Mercantil 0105) y
+ * tus dos backends: standalone-chatbot-api.ts (:3000) y client-sales-bot.ts (:3001).
  */
 
 window.CHEKEA_CONFIG = {
   brand: {
-    name: "Chekea",
-    tagline: "Inteligencia que responde. APIs que escalan.",
-    email: "contacto@chekea.io",
+    name: "Ckekea",
+    appName: "Ckekea App",
+    botName: "Max",
+    tagline: "Ventas automáticas 24/7 en WhatsApp, API Bancaria anti-fraude y enlace directo a tu ERP.",
+    email: "contacto@ckekea.io",
     country: "Venezuela",
     year: 2026
   },
 
-  // Datos oficiales de Pago Móvil (Venezuela - Banco Mercantil) y WhatsApp
+  // Datos oficiales del Bot Max en WhatsApp (extraídos de tu configuración)
+  bot: {
+    name: "Max",
+    companyName: "Ckekea",
+    appName: "Ckekea App",
+    whatsappEnabled: true,
+    whatsappNumberRaw: "584166214410",
+    whatsappNumberDisplay: "+58 416-6214410",
+    whatsappNumberEnv: "+584166214410",
+    whatsappSessionPath: ".wwebjs_auth",
+    defaultGreeting:
+      "Hola Max de Ckekea, vengo desde la página web y quiero conocer los planes y ver una demo."
+  },
+
+  // URL del servidor propio de Auth/Inventario (server/server.js)
+  // Cuando abres la web desde http://localhost:3000 o Railway, usa el mismo origen automáticamente.
+  platform: {
+    apiBaseUrl: "http://localhost:3000",
+    railwayPanelUrl: "https://chatbot-apirest-production.up.railway.app"
+  },
+
+  // Datos oficiales de Pago Móvil (Venezuela - Banco Mercantil) y WhatsApp de soporte/pagos
   payment: {
     country: "Venezuela",
     bankName: "Banco Mercantil",
@@ -28,27 +54,56 @@ window.CHEKEA_CONFIG = {
     cedulaFormatted: "V-31.091.406",
     phoneRaw: "04246003606",
     phoneFormatted: "0424-6003606",
-    whatsappInternational: "584246003606",
+    whatsappSupportRaw: "584246003606",
+    // Número principal para contactar al Bot Max por WhatsApp
+    whatsappInternational: "584166214410",
     holderName: "José Davalillo",
     exchangeRateBs: 52.50,
     annualDiscountPercent: 20
   },
 
-  // Rutas de imágenes principales (reemplaza los archivos en /assets/ cuando gustes)
+  // Rutas de imágenes (reemplaza los archivos en /assets/ cuando quieras)
   media: {
     heroShowcase: "assets/hero-showcase.jpg",
     aiArchitecture: "assets/ai-architecture.jpg"
   },
 
-  // Planes disponibles: Estándar, Pro y Gold
-  // `apiPlanEnum` se envía tal cual al campo `plan` de POST /api/v1/chatbot/api-keys/generate
+  // Seguridad ISO/IEC 27001:2022 & OWASP API Top 10 (de SECURITY_ISO27001.md)
+  security: [
+    {
+      code: "ISO A.5.15 / OWASP API2",
+      title: "Autenticación con tiempo constante",
+      desc: "Tokens X-API-Key y X-Panel-Token validados con crypto.timingSafeEqual y firmas HMAC-SHA256."
+    },
+    {
+      code: "ISO A.8.20 / OWASP API4",
+      title: "Rate Limiting inteligente",
+      desc: "Protección activa contra abuso (180 req/min API REST, 120 req/min API SaaS, 60 req/min Webhooks)."
+    },
+    {
+      code: "ISO A.8.26 / OWASP A03",
+      title: "Cero XSS y validación Zod",
+      desc: "Sanitización estricta en paneles web, validación de esquemas Zod y cabeceras Helmet defensivas."
+    },
+    {
+      code: "API Bancaria Anti-Fraude",
+      title: "Validación real de Pago Móvil",
+      desc: "Verificación directa contra el banco en segundos para erradicar capturas falsas editadas."
+    }
+  ],
+
+  // Planes reales de Ckekea (Estándar, Pro y Gold)
+  // Nota técnica: Prisma `enum PlanType` usa `LITE | PRO` en standalone-chatbot-api.ts,
+  // mientras client-sales-bot.ts usa `ESTANDAR | PRO | GOLD`. Aquí mapeamos ambos exactamente.
   plans: [
     {
       id: "estandar",
-      apiPlanEnum: "ESTANDAR",
+      apiPlanEnum: "LITE",
+      clientBotPlan: "ESTANDAR",
       name: "Estándar",
       badge: "Esencial",
-      tagline: "Bot IA 24/7, catálogo real, alertas Pago Móvil y cierre semanal PDF.",
+      tagline: "Bot IA 24/7 en WhatsApp + Ckekea App para catálogo, pedidos y alertas.",
+      idealFor: "Comercios y emprendimientos que desean dejar de perder ventas por demoras en WhatsApp.",
       priceUsdMonthly: 19,
       apiPrefix: "sk_live_std_",
       quotaRequests: "15,000 req / mes",
@@ -57,19 +112,21 @@ window.CHEKEA_CONFIG = {
       accent: "blue",
       featured: false,
       features: [
-        "Acceso inmediato al Bot Comercial + API Chatbot",
-        "Catálogo real BD, toma de pedidos y alertas Pago Móvil",
-        "Reporte PDF de Cierre Semanal automático",
-        "1 API Key dedicada (X-API-Key / Bearer)",
-        "Soporte directo por WhatsApp"
+        "Asistente virtual IA activo 24/7 en WhatsApp (sin depender de personal todo el día)",
+        "Panel web Ckekea App para catálogo, precios, stock y alertas de pedidos en vivo",
+        "Recepción de comprobantes Pago Móvil con alertas instantáneas en pantalla",
+        "Reporte PDF de Cierre Semanal de ventas y movimientos",
+        "1 API Key dedicada (X-API-Key / Bearer) + soporte directo"
       ]
     },
     {
       id: "pro",
       apiPlanEnum: "PRO",
+      clientBotPlan: "PRO",
       name: "Pro",
       badge: "Más popular",
-      tagline: "Todo Estándar + validación automática de Pago Móvil vía API Bancaria.",
+      tagline: "Todo el Plan Estándar + API Bancaria en tiempo real anti-fraude.",
+      idealFor: "Negocios con alto flujo de Pago Móvil que necesitan cobros seguros y automáticos.",
       priceUsdMonthly: 49,
       apiPrefix: "sk_live_pro_",
       quotaRequests: "150,000 req / mes",
@@ -78,20 +135,21 @@ window.CHEKEA_CONFIG = {
       accent: "indigo",
       featured: true,
       features: [
-        "Acceso completo al Bot WhatsApp QR + API SaaS",
-        "Validación automática Pago Móvil anti-fraude",
-        "150,000 req/mes + lectura de récipes/fotos en Base64",
-        "Sincronización de stock (/api/v1/stock/import)",
-        "Historial de conversaciones y calificación de respuestas",
-        "Soporte prioritario por WhatsApp"
+        "Todo lo incluido en el Plan Estándar (Bot IA 24/7 + Ckekea App + PDF Semanal)",
+        "Conexión con API Bancaria en tiempo real: valida cada Pago Móvil en segundos",
+        "Erradica capturas falsas editadas y libera a tu equipo de revisar referencias",
+        "Lectura IA de récipes/fotos en Base64 + sincronización de stock (/api/v1/stock/import)",
+        "Hasta 5 API Keys + historial de conversaciones y calificación de respuestas"
       ]
     },
     {
       id: "gold",
-      apiPlanEnum: "GOLD",
+      apiPlanEnum: "PRO",
+      clientBotPlan: "GOLD",
       name: "Gold",
       badge: "Empresarial",
-      tagline: "Todo Pro + stock multi-sucursal y Webhook directo a ERP (Saint/Profit/A2).",
+      tagline: "Bot IA + API Bancaria + Enlace bidireccional directo a tu ERP.",
+      idealFor: "Empresas consolidadas y multi-sucursal que operan con Saint, Profit Plus, A2, Valery o Premium Soft.",
       priceUsdMonthly: 119,
       apiPrefix: "sk_live_gld_",
       quotaRequests: "1,000,000 req / mes",
@@ -100,35 +158,34 @@ window.CHEKEA_CONFIG = {
       accent: "gold",
       featured: false,
       features: [
-        "Acceso VIP Bot Marca Blanca + API Empresarial",
-        "Stock multi-sucursal + Webhook firmado a ERP (Saint/Profit)",
-        "1,000,000 req/mes con API Keys ilimitadas",
-        "Cierre semanal PDF programado directo al WhatsApp del dueño",
-        "Consultoría técnica directa con ingeniería",
-        "Atención VIP 24/7 por WhatsApp"
+        "Todo lo del Plan Pro (Bot IA 24/7 + Ckekea App + API Bancaria anti-fraude)",
+        "Integración API REST y Webhooks firmados con Saint, Profit Plus, A2, Valery y Premium Soft",
+        "Sincronización automática de inventario multi-sucursal, precios y facturación",
+        "Cierre semanal PDF enviado automáticamente al WhatsApp del dueño",
+        "API Keys ilimitadas + consultoría técnica directa con ingeniería"
       ]
     }
   ],
 
-  // Equipo Fundador (cada tarjeta abre un pop-up con su resumen y contacto WhatsApp)
+  // Equipo Fundador (cada tarjeta abre un pop-up con resumen de rol y contacto WhatsApp)
   founders: [
     {
       id: "fidel",
       name: "Fidel Pereira",
       role: "Fundador",
-      shortRole: "Visión Estratégica & Origen",
+      shortRole: "Visión Estratégica & Origen de Ckekea",
       image: "assets/founder-fidel.jpg",
       summary:
-        "Fundador de Chekea y mente estratégica detrás del propósito de democratizar la inteligencia artificial y los pagos digitales en Latinoamérica.",
+        "Fundador de Ckekea y mente estratégica detrás de llevar inteligencia artificial, cobros verificados y automatización real a los comercios de Venezuela y Latinoamérica.",
       bio:
-        "Fidel impulsa la visión fundacional del ecosistema Chekea, identificando oportunidades reales del mercado venezolano y regional para transformar procesos manuales en soluciones digitales veloces, confiables y accesibles.",
+        "Fidel impulsa la visión fundacional del ecosistema Ckekea y Ckekea App, transformando procesos manuales de venta y validación de pagos en experiencias rápidas, confiables y escalables para todo tipo de comercios.",
       highlights: [
         "Visión de Producto",
         "Alianzas Estratégicas",
-        "Expansión Regional"
+        "Expansión Comercial"
       ],
       whatsappText:
-        "Hola equipo Chekea, vi el perfil de Fidel Pereira (Fundador) y me gustaría conversar sobre alianzas y planes."
+        "Hola Max / equipo Ckekea, vi el perfil de Fidel Pereira (Fundador) y quiero conversar sobre alianzas y planes."
     },
     {
       id: "jesus",
@@ -137,47 +194,43 @@ window.CHEKEA_CONFIG = {
       shortRole: "Dirección Ejecutiva & Crecimiento",
       image: "assets/founder-jesus.jpg",
       summary:
-        "Chief Executive Officer encargado de la dirección ejecutiva, estrategia comercial, experiencia del cliente y escalamiento operativo de Chekea.",
+        "Chief Executive Officer encargado de la dirección ejecutiva, estrategia comercial, acompañamiento al cliente y crecimiento operativo de Ckekea.",
       bio:
-        "Jesús lidera el crecimiento comercial y la operación integral de la compañía, asegurando que cada cliente —desde emprendedores en el plan Estándar hasta empresas Gold— reciba un servicio impecable, transparente y orientado a resultados.",
+        "Jesús lidera la operación comercial y la experiencia integral de cada cliente —desde comercios en Plan Estándar hasta cadenas multi-sucursal en Plan Gold— garantizando resultados tangibles desde la primera semana.",
       highlights: [
         "Dirección Ejecutiva",
         "Estrategia Comercial",
         "Éxito del Cliente"
       ],
       whatsappText:
-        "Hola equipo Chekea, vi el perfil de Jesús Romero (CEO) y quiero información comercial sobre sus soluciones."
+        "Hola Max / equipo Ckekea, vi el perfil de Jesús Romero (CEO) y deseo información comercial sobre los planes."
     },
     {
       id: "jose",
       name: "José Davalillo",
       role: "Ingeniero y Desarrollador de Software",
-      shortRole: "Arquitectura de Software, IA & APIs",
+      shortRole: "Arquitectura Backend, IA, Seguridad ISO 27001 & APIs",
       image: "assets/founder-jose.jpg",
       summary:
-        "Ingeniero y Desarrollador principal de software responsable de la arquitectura técnica, el motor de IA conversacional, la pasarela de pago y el sistema de emisión automática de APIs.",
+        "Ingeniero y Desarrollador principal de software responsable de Max, la arquitectura Node.js/TypeScript, la API REST multi-tenant, la seguridad ISO/IEC 27001 y la pasarela integrada.",
       bio:
-        "José diseña y construye la infraestructura completa de Chekea bajo estándares modernos de ingeniería: interfaces ultrarrápidas, integración de pasarelas de pago venezolanas, seguridad criptográfica en la generación de API Keys y despliegues escalables listos para producción.",
+        "José diseña y desarrolla el núcleo tecnológico de Ckekea: el motor conversacional de Max con OpenRouter/fallback, la API Bancaria anti-fraude, el Bot Comercial entregable con cierres PDF, webhooks firmados para ERP (Saint, Profit Plus, A2, Valery, Premium Soft) y la provisión automática de API Keys.",
       highlights: [
-        "Arquitectura Full-Stack",
-        "Motor API & Webhooks",
-        "Integración IA & Pagos"
+        "Node.js · TypeScript · Prisma",
+        "Motor IA Max & WhatsApp",
+        "ISO 27001 & Integración ERP"
       ],
       whatsappText:
-        "Hola José Davalillo, vi tu perfil en Chekea y quiero consultarte sobre la integración de API y los planes disponibles."
+        "Hola José Davalillo, vi tu perfil en Ckekea y quiero consultarte sobre la integración de API, ERP y el bot Max."
     }
   ],
 
-  // ==========================================================================
-  // CONEXIÓN REAL A TUS 2 ARCHIVOS BACKEND (standalone-chatbot-api.ts y client-sales-bot.ts)
-  // ==========================================================================
+  // Conexión a los 2 servicios backend de Chatbot-ApiRest.zip
   apiStudio: {
-    // "local_plus_webhook": intenta llamar a tu backend real; si está apagado emite respaldo local para pruebas
-    // "remote_only": exige respuesta 201 real de POST /api/v1/chatbot/api-keys/generate
     mode: "local_plus_webhook",
 
-    // 1) Backend standalone-chatbot-api.ts (npm run dev:api -> puerto 3000)
-    baseUrl: "http://localhost:3000",
+    // 1) Backend principal desplegado en Railway (https://chatbot-apirest-production.up.railway.app)
+    baseUrl: "https://chatbot-apirest-production.up.railway.app",
     chatEndpoint: "/api/v1/chatbot/message",
     provisionEndpoint: "/api/v1/chatbot/api-keys/generate",
     conversationsEndpoint: "/api/v1/chatbot/conversations",
@@ -186,73 +239,72 @@ window.CHEKEA_CONFIG = {
     stockSyncEndpoint: "/api/v1/stock/import",
     authHeaderName: "X-API-Key",
     authPrefix: "",
-    // Coloca aquí tu API Key maestra/admin de standalone-chatbot-api.ts para crear nuevos tenants al pagar
     masterApiToken: "",
     customKeyPrefix: "sk_live_",
     autoGenerateKeyOnPayment: true,
 
-    // 2) Backend client-sales-bot.ts (npm run dev:client-bot -> puerto 3001)
+    // 2) client-sales-bot.ts (puerto 3001)
     clientBotBaseUrl: "http://localhost:3001",
-    clientBotPanelToken: "", // Si defines CLIENT_PANEL_TOKEN en tu .env, colócalo aquí o en API Studio
+    clientBotPanelToken: "",
     clientBotChatEndpoint: "/api/chat",
     clientBotStateEndpoint: "/api/state",
     clientBotToggleEndpoint: "/api/toggle",
     clientBotPdfEndpoint: "/api/reports/weekly-pdf",
 
-    // Especificación OpenAPI cargada por defecto con los endpoints reales de tus 2 archivos
-    uploadedSpecName: "chekea-backend-v1.json",
+    // Especificación OpenAPI con las rutas reales de Chatbot-ApiRest.zip
+    uploadedSpecName: "ckekea-chatbot-apirest-v2.json",
     uploadedSpec: {
       openapi: "3.1.0",
       info: {
-        title: "Chekea Standalone Chatbot API + Client Sales Bot",
-        version: "1.0.0",
+        title: "Ckekea Chatbot-ApiRest v2.0 (Max + Client Sales Bot)",
+        version: "2.0.0",
         description:
-          "Endpoints conectados directamente a standalone-chatbot-api.ts (:3000) y client-sales-bot.ts (:3001)."
+          "API REST multi-tenant endurecida bajo ISO/IEC 27001:2022 y OWASP API Top 10. Conecta Max (BOT_NAME=Max, +584166214410) y el Bot Comercial Entregable."
       },
       paths: {
         "/api/v1/chatbot/api-keys/generate": {
           post: {
-            summary: "Crear Tenant y generar API Key (sk_live_...) tras confirmar pago"
+            summary: "Crear Tenant y emitir API Key (sk_live_...) tras confirmar Pago Móvil"
           }
         },
         "/api/v1/chatbot/message": {
           post: {
-            summary: "Enviar mensaje o imagen Base64 al Chatbot SaaS (X-API-Key)"
+            summary: "Enviar mensaje o imagen Base64 a Max / Bot de Ventas (X-API-Key)"
           }
         },
         "/api/v1/chatbot/conversations": {
           get: {
-            summary: "Listar conversaciones activas del tenant"
+            summary: "Listar sesiones activas de WhatsApp/API del Tenant"
           }
         },
         "/api/v1/chatbot/history/{conversationId}": {
           get: {
-            summary: "Consultar historial completo de una conversación"
+            summary: "Historial completo de mensajes y estados de una conversación"
           }
         },
         "/api/v1/chatbot/rate/{queryId}": {
           post: {
-            summary: "Calificar respuesta del Chatbot (helpful: true/false)"
+            summary: "Calificar respuesta del bot (helpful: true/false)"
           }
         },
         "/api/v1/stock/import": {
           post: {
-            summary: "Sincronizar catálogo / inventario de productos del cliente"
+            summary: "Sincronizar inventario/catálogo (compatible Premium Soft / ERP)"
           }
         },
         "[:3001] /api/chat": {
           post: {
-            summary: "Enviar mensaje al Bot Comercial (client-sales-bot.ts)"
+            summary: "Chat directo con el Bot Comercial Entregable (client-sales-bot.ts)"
           }
         },
         "[:3001] /api/state": {
           get: {
-            summary: "Estado del Bot, QR WhatsApp, alertas de pago y resumen semanal"
+            summary: "Estado en vivo, QR WhatsApp, alertas de pago y métricas semanales"
           }
         },
         "[:3001] /api/reports/weekly-pdf": {
           get: {
-            summary: "Descargar PDF de Cierre Semanal de Ventas y Movimientos"
+            summary: "Descargar Reporte PDF de Cierre Semanal de Ventas y Movimientos"
           }
         }
       }

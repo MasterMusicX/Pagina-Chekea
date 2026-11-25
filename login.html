@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Inicia sesión o crea tu cuenta en Ckekea para administrar tu inventario, encender/apagar tu bot y sincronizar WhatsApp." />
+  <title>Iniciar Sesión / Registro — Ckekea</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="login">
+  <div id="siteHeader"></div>
+
+  <main>
+    <section class="auth-section">
+      <div class="container auth-grid">
+        <!-- Columna informativa -->
+        <div class="auth-intro reveal">
+          <div class="eyebrow">
+            <span class="eyebrow__dot"></span>
+            Ckekea Cloud · Neon PostgreSQL + Railway Bot
+          </div>
+          <h1>Tu propio Dashboard para controlar el Bot y tu inventario.</h1>
+          <p>
+            Crea tu cuenta protegida con cifrado <strong>scrypt + JWT</strong>. Al entrar podrás subir tu catálogo (CSV, JSON o manual) para que <strong>Max</strong> lo asimile al instante, vincular tu WhatsApp por QR y encender o apagar el bot cuando quieras.
+          </p>
+          <ul class="auth-benefits">
+            <li>Base de datos dedicada multi-tenant en Neon PostgreSQL</li>
+            <li>Emisión automática de tu <code>X-API-Key (sk_live_...)</code> compatible con Railway</li>
+            <li>Interruptor instantáneo para prender o apagar el Bot a voluntad</li>
+            <li>Carga masiva de inventario analizada en vivo por IA</li>
+          </ul>
+        </div>
+
+        <!-- Tarjeta de Login / Registro -->
+        <div class="auth-card reveal">
+          <div class="auth-tabs" role="tablist" aria-label="Acceso de cliente">
+            <button type="button" class="auth-tab is-active" data-auth-tab="login" aria-selected="true">Iniciar Sesión</button>
+            <button type="button" class="auth-tab" data-auth-tab="register" aria-selected="false">Crear Cuenta</button>
+          </div>
+
+          <div class="auth-alert" id="authAlert" hidden></div>
+
+          <!-- Formulario de Login -->
+          <form id="loginForm" class="auth-form is-active" data-auth-panel="login">
+            <div class="field-light">
+              <label for="loginEmail">Correo electrónico</label>
+              <input type="email" id="loginEmail" placeholder="tu@negocio.com" autocomplete="email" required />
+            </div>
+            <div class="field-light">
+              <label for="loginPassword">Contraseña</label>
+              <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required />
+            </div>
+            <button type="submit" class="btn btn--primary btn--full btn--lg" id="loginSubmitBtn">
+              Entrar a mi Dashboard
+            </button>
+            <p class="auth-switch-hint">
+              ¿Aún no tienes cuenta? <button type="button" class="link-inline" data-auth-tab="register">Regístrate gratis aquí</button>
+            </p>
+          </form>
+
+          <!-- Formulario de Registro -->
+          <form id="registerForm" class="auth-form" data-auth-panel="register">
+            <div class="form-row-2">
+              <div class="field-light">
+                <label for="regFullName">Tu nombre</label>
+                <input type="text" id="regFullName" placeholder="Ej. José Davalillo" required />
+              </div>
+              <div class="field-light">
+                <label for="regBusinessName">Nombre de tu negocio</label>
+                <input type="text" id="regBusinessName" placeholder="Ej. Farmacia Central" required />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="field-light">
+                <label for="regBusinessType">Rubro del negocio</label>
+                <select id="regBusinessType" required>
+                  <option value="RETAIL">Comercio / Retail</option>
+                  <option value="PHARMACY">Farmacia / Salud</option>
+                  <option value="TECH">Tecnología / Electrónica</option>
+                  <option value="HARDWARE">Ferretería / Repuestos</option>
+                </select>
+              </div>
+              <div class="field-light">
+                <label for="regPlanTier">Plan inicial</label>
+                <select id="regPlanTier" required>
+                  <option value="ESTANDAR">Estándar ($19/mes)</option>
+                  <option value="PRO" selected>Pro ($49/mes)</option>
+                  <option value="GOLD">Gold ($119/mes)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="field-light">
+                <label for="regEmail">Correo electrónico</label>
+                <input type="email" id="regEmail" placeholder="tu@negocio.com" autocomplete="email" required />
+              </div>
+              <div class="field-light">
+                <label for="regPhone">WhatsApp del negocio</label>
+                <input type="tel" id="regPhone" placeholder="584141234567" required />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="field-light">
+                <label for="regPassword">Contraseña (mín. 6 caracteres)</label>
+                <input type="password" id="regPassword" placeholder="Crea una contraseña segura" minlength="6" autocomplete="new-password" required />
+              </div>
+              <div class="field-light">
+                <label for="regPasswordConfirm">Repetir contraseña</label>
+                <input type="password" id="regPasswordConfirm" placeholder="Repite tu contraseña" minlength="6" autocomplete="new-password" required />
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--full btn--lg" id="registerSubmitBtn">
+              Crear cuenta y abrir Dashboard
+            </button>
+          </form>
+
+          <!-- Selector de URL de Backend para uso en GitHub Pages -->
+          <details class="api-origin-details">
+            <summary>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Servidor API (para GitHub Pages)
+            </summary>
+            <div class="api-origin-row">
+              <input type="url" id="platformApiOriginInput" placeholder="https://tu-servidor-auth.up.railway.app" />
+              <button type="button" class="btn btn--secondary btn--xs" id="savePlatformOriginBtn">Guardar</button>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="siteFooter"></div>
+  <div id="siteOverlays"></div>
+
+  <script src="config.js"></script>
+  <script src="layout.js"></script>
+  <script src="app.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

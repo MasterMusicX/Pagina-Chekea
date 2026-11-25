@@ -1,0 +1,502 @@
+/**
+ * ============================================================================
+ * CKEKEA — SHELL COMPARTIDO MULTIPÁGINA (NAVBAR, FOOTER, DOCK Y MODALES)
+ * ============================================================================
+ * Inyecta automáticamente la navegación entre páginas, el pie de página,
+ * el dock flotante de Max (+58 416-6214410) y los modales (Pasarela Pago Móvil,
+ * Fundadores, Contacto WhatsApp y Desbloqueo con API Key) en todas las páginas:
+ *   - index.html
+ *   - chatbot.html
+ *   - planes.html
+ *   - api-studio.html
+ *   - fundadores.html
+ */
+
+(function () {
+  "use strict";
+
+  const BASE = window.CHEKEA_CONFIG;
+  const currentPage = (document.body.getAttribute("data-page") || "inicio").toLowerCase();
+
+  const NAV_ITEMS = [
+    { key: "inicio", href: "index.html", label: "Inicio" },
+    { key: "chatbot", href: "chatbot.html", label: "Max IA" },
+    { key: "planes", href: "planes.html", label: "Planes" },
+    { key: "api-studio", href: "api-studio.html", label: "API Studio" },
+    { key: "fundadores", href: "fundadores.html", label: "Fundadores" },
+    { key: "dashboard", href: "dashboard.html", label: "Dashboard" }
+  ];
+
+  // Si la sesión actual pertenece a un SUPERADMIN, añadir acceso rápido al Panel Admin
+  try {
+    const rawUser = localStorage.getItem("ckekea_auth_user_v1");
+    if (rawUser) {
+      const parsedUser = JSON.parse(rawUser);
+      if (parsedUser && parsedUser.role === "SUPERADMIN") {
+        NAV_ITEMS.push({ key: "admin", href: "admin.html", label: "Admin" });
+      }
+    }
+  } catch {
+    // silencioso
+  }
+
+  function renderNavLinks(isMobile) {
+    return NAV_ITEMS.map((item) => {
+      const active = item.key === currentPage ? ' class="is-active" aria-current="page"' : "";
+      const label = isMobile && item.key === "planes" ? "Planes Estándar, Pro y Gold" : item.label;
+      return `<a href="${item.href}"${active}>${label}</a>`;
+    }).join("");
+  }
+
+  function injectHeader() {
+    const mount = document.getElementById("siteHeader");
+    if (!mount) return;
+
+    mount.innerHTML = `
+      <header class="navbar" id="navbar">
+        <div class="container navbar__inner">
+          <a href="index.html" class="brand" aria-label="${BASE.brand.name} Inicio">
+            <span class="brand__mark" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="2" width="20" height="20" rx="6" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M8 12.5L10.8 15.3L16.5 9.2" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="brand__name">${BASE.brand.name}</span>
+          </a>
+
+          <nav class="nav-links" aria-label="Navegación principal">
+            ${renderNavLinks(false)}
+          </nav>
+
+          <div class="navbar__actions">
+            <a href="login.html" class="btn btn--ghost btn--sm" id="navLoginLink">
+              Iniciar Sesión
+            </a>
+            <button type="button" class="btn btn--primary btn--sm" data-open-payment="pro">
+              Contratar
+            </button>
+            <button type="button" class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+          <nav class="mobile-menu__links">
+            ${renderNavLinks(true)}
+          </nav>
+          <div class="mobile-menu__actions">
+            <a href="login.html" class="btn btn--secondary btn--full" id="mobileLoginLink">Iniciar Sesión / Crear Cuenta</a>
+            <button type="button" class="btn btn--primary btn--full" data-open-payment="pro">Pagar y Desbloquear Bot + API</button>
+            <button type="button" class="btn btn--whatsapp btn--full" data-open-whatsapp>Hablar con Max (${BASE.bot.whatsappNumberDisplay})</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="ribbon">
+        <div class="container ribbon__inner">
+          <p>
+            Bot <strong>${BASE.bot.name}</strong> activo en WhatsApp <strong>${BASE.bot.whatsappNumberDisplay}</strong> · Pasarela <strong>Mercantil (0105)</strong> con API Key al instante.
+            <a href="planes.html" class="ribbon__link">Explorar Planes Estándar, Pro y Gold ›</a>
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  function injectFooter() {
+    const mount = document.getElementById("siteFooter");
+    if (!mount) return;
+
+    mount.innerHTML = `
+      <footer class="footer">
+        <div class="container">
+          <div class="footer__top">
+            <div class="footer__brand">
+              <strong>${BASE.brand.name}</strong>
+              <p>Ecosistema de ventas con IA 24/7 (Max), ${BASE.brand.appName}, API Bancaria anti-fraude e integración ERP en Venezuela.</p>
+            </div>
+            <div class="footer__cols">
+              <div>
+                <h4>Páginas</h4>
+                <a href="index.html">Inicio</a>
+                <a href="login.html">Iniciar Sesión / Registro</a>
+                <a href="dashboard.html">Mi Dashboard (Bot e Inventario)</a>
+                <a href="chatbot.html">Max IA &amp; Portal Bot</a>
+                <a href="planes.html">Planes Estándar, Pro y Gold</a>
+                <a href="api-studio.html">API Studio &amp; Webhooks</a>
+                <a href="fundadores.html">Equipo Fundador</a>
+              </div>
+              <div>
+                <h4>Bot Max (WhatsApp)</h4>
+                <span>Bot Oficial: <strong>${BASE.bot.name} (${BASE.brand.name})</strong></span>
+                <span>WhatsApp Bot: <strong>${BASE.bot.whatsappNumberDisplay}</strong></span>
+                <span>Sesión: <code>${BASE.bot.whatsappSessionPath}</code></span>
+                <button type="button" class="footer__link-btn" data-open-whatsapp>Chatear con Max en WhatsApp ›</button>
+              </div>
+              <div>
+                <h4>Pago Móvil Venezuela</h4>
+                <span>${BASE.payment.bankName} (${BASE.payment.bankCode})</span>
+                <span>C.I.: ${BASE.payment.cedulaFormatted}</span>
+                <span>Teléfono Pagos: ${BASE.payment.phoneFormatted}</span>
+                <button type="button" class="footer__link-btn" data-open-payment="pro">Abrir Pasarela de Pago ›</button>
+              </div>
+            </div>
+          </div>
+          <div class="footer__bottom">
+            <p>© <span id="footerYear">${BASE.brand.year}</span> ${BASE.brand.name} Venezuela. Seguridad alineada a ISO/IEC 27001:2022 y OWASP API Top 10.</p>
+            <p>Arquitectura multipágina HTML, CSS y JavaScript conectada a Chatbot-ApiRest.</p>
+          </div>
+        </div>
+      </footer>
+    `;
+  }
+
+  function injectDockAndModals() {
+    const mount = document.getElementById("siteOverlays");
+    if (!mount) return;
+
+    mount.innerHTML = `
+      <!-- Dock flotante: WhatsApp Max (+584166214410) + Consola Rápida de Max -->
+      <div class="floating-dock" aria-label="Accesos rápidos">
+        <button type="button" class="dock-btn dock-btn--whatsapp" data-open-whatsapp aria-label="Contactar a Max por WhatsApp">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20.52 3.48A11.86 11.86 0 0 0 12.05 0C5.5 0 .16 5.33.16 11.9c0 2.1.55 4.14 1.6 5.95L0 24l6.33-1.66a11.87 11.87 0 0 0 5.71 1.46h.01c6.55 0 11.89-5.34 11.89-11.9 0-3.18-1.24-6.17-3.42-8.42ZM12.05 21.8h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.76.98 1-3.66-.24-.38a9.86 9.86 0 0 1-1.51-5.25c0-5.45 4.44-9.89 9.91-9.89 2.65 0 5.13 1.03 7 2.9a9.84 9.84 0 0 1 2.9 7c0 5.46-4.45 9.89-9.9 9.89Zm5.43-7.41c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.65-2.05-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.42.25-.7.25-1.29.17-1.42-.07-.12-.27-.2-.57-.35Z"/>
+          </svg>
+          <span>Max WhatsApp</span>
+        </button>
+
+        <button type="button" class="dock-btn dock-btn--chat" id="floatingChatToggle" aria-label="Abrir Asistente Max">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
+      </div>
+
+      <!-- Ventana flotante del Bot Max (disponible en todas las páginas) -->
+      <aside class="floating-chat" id="floatingChatDrawer" aria-hidden="true">
+        <div class="chat-panel__header">
+          <div class="chat-agent">
+            <div class="chat-agent__avatar">M</div>
+            <div>
+              <strong>${BASE.bot.name} · ${BASE.brand.name}</strong>
+              <span class="chat-agent__status"><span class="status-dot status-dot--green"></span>Asesor IA · ${BASE.bot.whatsappNumberDisplay}</span>
+            </div>
+          </div>
+          <button type="button" class="modal-close modal-close--sm" id="floatingChatClose" aria-label="Cerrar chat">×</button>
+        </div>
+        <div class="chat-panel__messages" id="floatingChatMessages"></div>
+        <div class="chat-quick-prompts chat-quick-prompts--compact">
+          <button type="button" class="prompt-chip" data-prompt="1">1. Planes</button>
+          <button type="button" class="prompt-chip" data-prompt="2">2. Demo venta</button>
+          <button type="button" class="prompt-chip" data-prompt="3">3. Seguridad y ERP</button>
+          <button type="button" class="prompt-chip" data-prompt="4">4. Diagnóstico</button>
+        </div>
+        <form class="chat-panel__form" id="floatingChatForm">
+          <input type="text" id="floatingChatInput" class="chat-input" placeholder="Escribe 1, 2, 3, 4 o tu pregunta..." autocomplete="off" required />
+          <button type="submit" class="btn btn--primary btn--icon" aria-label="Enviar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </form>
+      </aside>
+
+      <!-- MODAL 1: PASARELA DE PAGO MÓVIL MERCANTIL (OPTIMIZADA PARA MÓVIL ESTILO SHEET FLUIDO) -->
+      <div class="modal-backdrop" id="paymentModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+        <div class="modal modal--wide modal--payment">
+          <div class="modal-sheet-bar">
+            <span class="modal-sheet-handle" aria-hidden="true"></span>
+            <span class="modal-sheet-title">Pasarela Pago Móvil · Mercantil</span>
+            <button type="button" class="modal-close" data-close-modal aria-label="Cerrar pasarela">×</button>
+          </div>
+
+          <div class="modal-scroll-body">
+            <div id="paymentStepForm">
+              <div class="modal__header">
+                <span class="modal-kicker">Pasarela Oficial Venezuela · Pago Móvil</span>
+                <h3 id="paymentModalTitle">Activa tu plan y recibe acceso a Max y tu API</h3>
+                <p>Realiza tu Pago Móvil a Banco Mercantil y registra la referencia para emitir tu <code>X-API-Key</code> al instante.</p>
+              </div>
+
+              <div class="checkout-grid">
+                <!-- Columna izquierda: Datos Mercantil -->
+                <div class="mercantil-card">
+                  <div class="mercantil-card__brand">
+                    <div>
+                      <span class="bank-tag">VENEZUELA · PAGO MÓVIL</span>
+                      <h4>${BASE.payment.bankName} (${BASE.payment.bankCode})</h4>
+                    </div>
+                    <span class="verified-chip">Verificado</span>
+                  </div>
+
+                  <div class="copy-list">
+                    <div class="copy-item">
+                      <div>
+                        <span>Banco</span>
+                        <strong>${BASE.payment.bankCode} · Mercantil</strong>
+                      </div>
+                      <button type="button" class="copy-btn" data-copy-text="${BASE.payment.bankCode}">Copiar</button>
+                    </div>
+                    <div class="copy-item">
+                      <div>
+                        <span>Cédula de Identidad</span>
+                        <strong id="pmCedulaText">${BASE.payment.cedulaFormatted}</strong>
+                      </div>
+                      <button type="button" class="copy-btn" data-copy-text="${BASE.payment.cedulaRaw}">Copiar</button>
+                    </div>
+                    <div class="copy-item">
+                      <div>
+                        <span>Teléfono Pago Móvil</span>
+                        <strong id="pmPhoneText">${BASE.payment.phoneFormatted}</strong>
+                      </div>
+                      <button type="button" class="copy-btn" data-copy-text="${BASE.payment.phoneRaw}">Copiar</button>
+                    </div>
+                    <div class="copy-item copy-item--highlight">
+                      <div>
+                        <span>Monto a transferir</span>
+                        <strong id="pmAmountSummary">$49 USD · Bs. 2.572,50</strong>
+                      </div>
+                      <button type="button" class="copy-btn" id="copyBsAmountBtn">Copiar Bs</button>
+                    </div>
+                  </div>
+
+                  <button type="button" class="btn btn--glass btn--full btn--sm" id="copyAllPaymentBtn">
+                    Copiar todos los datos de Pago Móvil
+                  </button>
+
+                  <div class="mercantil-card__note">
+                    <strong>Titular:</strong> ${BASE.payment.holderName} · País: ${BASE.payment.country}.<br />
+                    Tras confirmar, se desbloquea tu acceso al Bot <strong>${BASE.bot.name}</strong> y tu <strong>API Key</strong>.
+                  </div>
+                </div>
+
+                <!-- Columna derecha: Datos del cliente & referencia -->
+                <form id="paymentCheckoutForm" class="checkout-form">
+                  <div class="form-row-2">
+                    <div class="field-light">
+                      <label for="payPlanSelect">Plan seleccionado</label>
+                      <select id="payPlanSelect" required>
+                        <option value="estandar">Plan Estándar</option>
+                        <option value="pro" selected>Plan Pro (Más popular)</option>
+                        <option value="gold">Plan Gold (Empresarial)</option>
+                      </select>
+                    </div>
+                    <div class="field-light">
+                      <label for="payBusinessType">Rubro del negocio</label>
+                      <select id="payBusinessType" required>
+                        <option value="RETAIL">Comercio / Retail</option>
+                        <option value="PHARMACY">Farmacia / Salud</option>
+                        <option value="TECH">Tecnología / Electrónica</option>
+                        <option value="HARDWARE">Ferretería / Repuestos</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-row-2">
+                    <div class="field-light">
+                      <label for="payCustomerName">Nombre / Negocio</label>
+                      <input type="text" id="payCustomerName" placeholder="Ej. Farmacia Central" required />
+                    </div>
+                    <div class="field-light">
+                      <label for="payCustomerEmail">Correo electrónico</label>
+                      <input type="email" id="payCustomerEmail" placeholder="tu@correo.com" required />
+                    </div>
+                  </div>
+
+                  <div class="form-row-2">
+                    <div class="field-light">
+                      <label for="payOriginBank">Banco de origen</label>
+                      <select id="payOriginBank" required>
+                        <option value="Mercantil (0105)">Mercantil (0105)</option>
+                        <option value="Banco de Venezuela (0102)">Banco de Venezuela (0102)</option>
+                        <option value="Banesco (0134)">Banesco (0134)</option>
+                        <option value="BBVA Provincial (0108)">BBVA Provincial (0108)</option>
+                        <option value="BNC (0191)">BNC (0191)</option>
+                        <option value="Bancamiga (0172)">Bancamiga (0172)</option>
+                        <option value="Otro Banco Nacional">Otro Banco Nacional</option>
+                      </select>
+                    </div>
+                    <div class="field-light">
+                      <label for="payCustomerPhone">Tu teléfono WhatsApp</label>
+                      <input type="tel" id="payCustomerPhone" placeholder="04141234567" required />
+                    </div>
+                  </div>
+
+                  <div class="form-row-2">
+                    <div class="field-light">
+                      <label for="payReference">Referencia (6-8 dígitos)</label>
+                      <input type="text" id="payReference" placeholder="Ej. 849201" minlength="4" maxlength="16" inputmode="numeric" required />
+                    </div>
+                    <div class="field-light">
+                      <label for="payDate">Fecha del pago</label>
+                      <input type="date" id="payDate" required />
+                    </div>
+                  </div>
+
+                  <button type="submit" class="btn btn--primary btn--full btn--lg" id="confirmPaymentBtn">
+                    Confirmar Pago y Desbloquear Bot + API
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Paso 2: Éxito + API Key Generada -->
+            <div id="paymentStepSuccess" class="payment-success" hidden>
+              <div class="success-icon" aria-hidden="true">✓</div>
+              <span class="modal-kicker">Pago Registrado · Acceso Activado</span>
+              <h3>¡Listo! Ya tienes acceso a Max y tu API</h3>
+              <p id="successPlanDesc">Plan activado correctamente. Guarda tu llave en un lugar seguro.</p>
+
+              <div class="generated-key-box">
+                <span class="generated-key-box__label">TU NUEVA API KEY (X-API-Key)</span>
+                <div class="generated-key-box__row">
+                  <code id="freshApiKeyValue">sk_live_...</code>
+                  <button type="button" class="btn btn--primary btn--sm" id="copyFreshKeyBtn">Copiar Key</button>
+                </div>
+                <small id="freshWebhookStatus">Registrada y lista para peticiones.</small>
+              </div>
+
+              <div class="payment-success__actions">
+                <button type="button" class="btn btn--primary btn--lg" id="openUnlockedPortalBtn">
+                  Abrir Portal Bot + API ›
+                </button>
+                <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn--whatsapp btn--lg" id="sendReceiptWhatsappBtn">
+                  Enviar comprobante a Max (${BASE.bot.whatsappNumberDisplay})
+                </a>
+                <button type="button" class="btn btn--secondary btn--lg" id="goToStudioKeysBtn">
+                  Ver en API Studio
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL 2: POP-UP DE FUNDADORES -->
+      <div class="modal-backdrop" id="founderModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="founderModalName">
+        <div class="modal modal--founder">
+          <div class="modal-sheet-bar">
+            <span class="modal-sheet-handle" aria-hidden="true"></span>
+            <span class="modal-sheet-title">Equipo Fundador</span>
+            <button type="button" class="modal-close" data-close-modal aria-label="Cerrar perfil">×</button>
+          </div>
+          <div class="modal-scroll-body">
+            <div class="founder-modal__grid">
+              <div class="founder-modal__photo-wrap">
+                <img id="founderModalImg" src="" alt="" class="founder-modal__photo" />
+              </div>
+              <div class="founder-modal__body">
+                <span class="modal-kicker" id="founderModalRole">Rol</span>
+                <h3 id="founderModalName">Nombre</h3>
+                <p class="founder-modal__summary" id="founderModalSummary"></p>
+                <p class="founder-modal__bio" id="founderModalBio"></p>
+                <div class="founder-modal__tags" id="founderModalTags"></div>
+                <div class="founder-modal__actions">
+                  <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn--whatsapp btn--full" id="founderWhatsappBtn">
+                    Contactar por WhatsApp (${BASE.bot.whatsappNumberDisplay})
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL 3: POP-UP WHATSAPP (BOT MAX +584166214410 Y SOPORTE 0424-6003606) -->
+      <div class="modal-backdrop" id="whatsappModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="whatsappModalTitle">
+        <div class="modal modal--compact">
+          <div class="modal-sheet-bar">
+            <span class="modal-sheet-handle" aria-hidden="true"></span>
+            <span class="modal-sheet-title">WhatsApp Oficial ${BASE.brand.name}</span>
+            <button type="button" class="modal-close" data-close-modal aria-label="Cerrar contacto WhatsApp">×</button>
+          </div>
+          <div class="modal-scroll-body">
+            <div class="wa-header">
+              <div class="wa-badge-icon" aria-hidden="true">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.52 3.48A11.86 11.86 0 0 0 12.05 0C5.5 0 .16 5.33.16 11.9c0 2.1.55 4.14 1.6 5.95L0 24l6.33-1.66a11.87 11.87 0 0 0 5.71 1.46h.01c6.55 0 11.89-5.34 11.89-11.9 0-3.18-1.24-6.17-3.42-8.42ZM12.05 21.8h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.76.98 1-3.66-.24-.38a9.86 9.86 0 0 1-1.51-5.25c0-5.45 4.44-9.89 9.91-9.89 2.65 0 5.13 1.03 7 2.9a9.84 9.84 0 0 1 2.9 7c0 5.46-4.45 9.89-9.9 9.89Zm5.43-7.41c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.65-2.05-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.76-.72 2.01-1.42.25-.7.25-1.29.17-1.42-.07-.12-.27-.2-.57-.35Z"/>
+                </svg>
+              </div>
+              <span class="modal-kicker">Bot Oficial ${BASE.bot.name} · ${BASE.brand.name}</span>
+              <h3 id="whatsappModalTitle">Chatea con ${BASE.bot.name} por WhatsApp</h3>
+              <p>Conecta directo con el Bot <strong>${BASE.bot.name}</strong> al <strong>${BASE.bot.whatsappNumberDisplay}</strong> o con nuestro equipo de pagos al <strong>${BASE.payment.phoneFormatted}</strong>.</p>
+            </div>
+
+            <div class="wa-channel-switch" role="group" aria-label="Canal de WhatsApp">
+              <button type="button" class="wa-channel-btn is-active" data-wa-channel="${BASE.bot.whatsappNumberRaw}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Bot ${BASE.bot.name} (${BASE.bot.whatsappNumberDisplay})
+              </button>
+              <button type="button" class="wa-channel-btn" data-wa-channel="${BASE.payment.whatsappSupportRaw}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Pagos / Equipo (${BASE.payment.phoneFormatted})
+              </button>
+            </div>
+
+            <div class="wa-topics" id="waTopics">
+              <button type="button" class="wa-topic is-active" data-wa-msg="Hola Max de Ckekea, quiero ver los planes Estándar, Pro y Gold.">1. Ver Planes</button>
+              <button type="button" class="wa-topic" data-wa-msg="Hola Max, quiero probar la demo interactiva de venta.">2. Demo de Venta</button>
+              <button type="button" class="wa-topic" data-wa-msg="Hola Max, quiero integrar Ckekea con mi sistema ERP (Saint / Profit / A2 / Valery).">3. Seguridad y ERP</button>
+              <button type="button" class="wa-topic" data-wa-msg="Hola Max, quiero hacer el diagnóstico rápido para mi negocio.">4. Diagnóstico Rápido</button>
+              <button type="button" class="wa-topic" data-wa-msg="Hola equipo Ckekea, ya realicé mi Pago Móvil a Mercantil (0424-6003606) y quiero validar mi referencia.">Enviar Comprobante</button>
+            </div>
+
+            <form id="whatsappDirectForm" class="wa-form">
+              <div class="field-light">
+                <label for="waCustomMessage">Tu mensaje para WhatsApp</label>
+                <textarea id="waCustomMessage" rows="3" required>Hola Max de Ckekea, quiero ver los planes Estándar, Pro y Gold.</textarea>
+              </div>
+              <button type="submit" class="btn btn--whatsapp btn--full btn--lg" id="waSubmitBtn">
+                Abrir WhatsApp con Max (${BASE.bot.whatsappNumberDisplay})
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL 4: ACCESO CON API KEY EXISTENTE -->
+      <div class="modal-backdrop" id="unlockAccessModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="unlockAccessTitle">
+        <div class="modal modal--compact">
+          <div class="modal-sheet-bar">
+            <span class="modal-sheet-handle" aria-hidden="true"></span>
+            <span class="modal-sheet-title">Acceso Clientes ${BASE.brand.name}</span>
+            <button type="button" class="modal-close" data-close-modal aria-label="Cerrar acceso">×</button>
+          </div>
+          <div class="modal-scroll-body">
+            <div class="modal__header">
+              <span class="modal-kicker">Acceso Clientes ${BASE.brand.name}</span>
+              <h3 id="unlockAccessTitle">Desbloquea tu Bot y API</h3>
+              <p>Si ya pagaste tu plan o recibiste tu llave <code>sk_live_...</code>, ingrésala aquí para habilitar la consola de Max y el Bot Comercial.</p>
+            </div>
+            <form id="unlockAccessForm" class="wa-form">
+              <div class="field-light">
+                <label for="unlockApiKeyInput">Tu API Key (X-API-Key)</label>
+                <input type="text" id="unlockApiKeyInput" placeholder="sk_live_..." required />
+              </div>
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="unlockNameInput">Nombre o Negocio</label>
+                  <input type="text" id="unlockNameInput" placeholder="Mi Negocio" required />
+                </div>
+                <div class="field-light">
+                  <label for="unlockPlanInput">Plan</label>
+                  <select id="unlockPlanInput">
+                    <option value="ESTANDAR">Estándar</option>
+                    <option value="PRO" selected>Pro</option>
+                    <option value="GOLD">Gold</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn btn--primary btn--full btn--lg">Activar acceso al Bot y API</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    `;
+  }
+
+  injectHeader();
+  injectFooter();
+  injectDockAndModals();
+})();

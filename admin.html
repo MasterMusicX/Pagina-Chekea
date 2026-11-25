@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Panel Superadmin Ckekea — Gestión de empresas, creación de superusuarios, gráficas de consumo de API y Chatbot y configuración de API Bancaria." />
+  <title>Panel Superadmin — Ckekea</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="admin">
+  <div id="siteHeader"></div>
+
+  <main class="dash-main">
+    <!-- CABECERA SUPERADMIN -->
+    <section class="dash-header dash-header--admin">
+      <div class="container dash-header__inner">
+        <div>
+          <div class="dash-badges">
+            <span class="dash-pill dash-pill--super">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              SUPERADMIN
+            </span>
+            <span class="dash-pill dash-pill--plan">NEON POSTGRESQL</span>
+            <span class="dash-pill dash-pill--pay" id="adminEmailPill">josemigueldav05@gmail.com</span>
+          </div>
+          <h1>Consola Global Superadmin</h1>
+          <p>Control maestro de usuarios, superusuarios, consumo de API/Chatbot por empresa y pasarela de API Bancaria.</p>
+        </div>
+
+        <div class="dash-header__controls">
+          <a href="dashboard.html" class="btn btn--primary btn--sm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Mi Dashboard de Usuario
+          </a>
+          <button type="button" class="btn btn--glass btn--sm" id="adminRefreshBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Actualizar
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" id="adminLogoutBtn">Cerrar sesión</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--tinted dash-content">
+      <div class="container">
+        <!-- KPIs GLOBALES -->
+        <div class="dash-kpis">
+          <div class="dash-kpi-card">
+            <div class="kpi-head">
+              <span>Empresas / Cuentas</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0071e3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <strong id="admTotalUsers">0</strong>
+            <small id="admSuperCount">0 Superadmins</small>
+          </div>
+
+          <div class="dash-kpi-card">
+            <div class="kpi-head">
+              <span>Bots Activos</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+            </div>
+            <strong id="admActiveBots">0</strong>
+            <small id="admTotalProducts">0 productos en catálogo</small>
+          </div>
+
+          <div class="dash-kpi-card">
+            <div class="kpi-head">
+              <span>Consumo Total API</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5e5ce6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <strong id="admTotalApiCalls">0</strong>
+            <small>Solicitudes registradas</small>
+          </div>
+
+          <div class="dash-kpi-card">
+            <div class="kpi-head">
+              <span>Mensajes Chatbot IA</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <strong id="admTotalChatMsgs">0</strong>
+            <small>Consultas procesadas</small>
+          </div>
+        </div>
+
+        <!-- GRÁFICAS DE CONSUMO POR EMPRESA (API Y CHATBOT) -->
+        <div class="admin-charts-grid">
+          <div class="dash-card">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">Analítica en Tiempo Real</span>
+                <h2>Consumo de API y Chatbot por Empresa</h2>
+              </div>
+              <div class="chart-legend">
+                <span><i class="dot-api"></i> API REST</span>
+                <span><i class="dot-bot"></i> Chatbot IA</span>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap" id="companyUsageChart"></div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">Tendencia 7 Días &amp; Planes</span>
+                <h2>Actividad Diaria y Distribución</h2>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap" id="dailyTrendChart"></div>
+            <div class="plan-dist-wrap" id="planDistributionBox"></div>
+          </div>
+        </div>
+
+        <!-- GESTIÓN DE USUARIOS Y SUPERUSUARIOS -->
+        <div class="dash-grid-2 admin-users-layout">
+          <!-- Crear Usuario o Superusuario -->
+          <div class="dash-card">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">Control de Accesos</span>
+                <h2>Crear Usuario o Superusuario</h2>
+              </div>
+            </div>
+
+            <form id="adminCreateUserForm" class="dash-form">
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="admNewName">Nombre completo</label>
+                  <input type="text" id="admNewName" placeholder="Ej. Jesús Romero" required />
+                </div>
+                <div class="field-light">
+                  <label for="admNewBusiness">Empresa / Comercio</label>
+                  <input type="text" id="admNewBusiness" placeholder="Ej. Inversiones Alpha" required />
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="admNewEmail">Correo electrónico</label>
+                  <input type="email" id="admNewEmail" placeholder="usuario@empresa.com" required />
+                </div>
+                <div class="field-light">
+                  <label for="admNewPhone">Teléfono WhatsApp</label>
+                  <input type="tel" id="admNewPhone" placeholder="584141234567" />
+                </div>
+              </div>
+
+              <div class="form-row-3">
+                <div class="field-light">
+                  <label for="admNewRole">Rol del Sistema</label>
+                  <select id="admNewRole">
+                    <option value="USER">Usuario Común</option>
+                    <option value="SUPERADMIN">Superusuario (Admin)</option>
+                  </select>
+                </div>
+                <div class="field-light">
+                  <label for="admNewPlan">Plan</label>
+                  <select id="admNewPlan">
+                    <option value="ESTANDAR">Estándar</option>
+                    <option value="PRO" selected>Pro</option>
+                    <option value="GOLD">Gold</option>
+                  </select>
+                </div>
+                <div class="field-light">
+                  <label for="admNewRubro">Rubro</label>
+                  <select id="admNewRubro">
+                    <option value="RETAIL">Retail</option>
+                    <option value="PHARMACY">Farmacia</option>
+                    <option value="TECH">Tecnología</option>
+                    <option value="HARDWARE">Ferretería</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="admNewPass">Contraseña (mín. 6)</label>
+                  <input type="password" id="admNewPass" minlength="6" placeholder="••••••••" required />
+                </div>
+                <div class="field-light">
+                  <label for="admNewPassConfirm">Repetir contraseña</label>
+                  <input type="password" id="admNewPassConfirm" minlength="6" placeholder="••••••••" required />
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn--primary btn--full">Crear Cuenta en Neon DB</button>
+            </form>
+          </div>
+
+          <!-- Configuración Global de API Bancaria (Plug & Play) -->
+          <div class="dash-card dash-card--dark">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">Conciliación Automática Venezuela</span>
+                <h2>API Bancaria Global (Bots Vendidos)</h2>
+              </div>
+              <span class="verified-chip" id="admBankModePill">MANUAL</span>
+            </div>
+
+            <form id="adminBankForm" class="dash-form">
+              <div class="form-row-2">
+                <div class="field">
+                  <label for="admBankProvider">Banco / Proveedor</label>
+                  <select id="admBankProvider">
+                    <option value="MERCANTIL">Banco Mercantil (0105)</option>
+                    <option value="BDV">Banco de Venezuela / BDV (0102)</option>
+                    <option value="BANESCO">Banesco (0134)</option>
+                    <option value="BNC">Banco Nacional de Crédito / BNC (0191)</option>
+                    <option value="BANCAMIGA">Bancamiga (0172)</option>
+                    <option value="CUSTOM">Endpoint Bancario Personalizado</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="admBankMode">Modo de Validación</label>
+                  <select id="admBankMode">
+                    <option value="MANUAL">MANUAL (Revisión humana)</option>
+                    <option value="BANK_API">BANK_API (Automática en vivo)</option>
+                    <option value="SIMULATED">SIMULATED (Pruebas automáticas)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="admBankUrl">URL Endpoint API del Banco</label>
+                <input type="url" id="admBankUrl" placeholder="https://apimbu.mercantilbanco.com/..." />
+              </div>
+
+              <div class="form-row-2">
+                <div class="field">
+                  <label for="admBankKey">API Key / Client ID del Banco</label>
+                  <input type="password" id="admBankKey" placeholder="Dejar vacío para conservar actual" />
+                </div>
+                <div class="field">
+                  <label for="admBankSecret">Client Secret (Firma HMAC)</label>
+                  <input type="password" id="admBankSecret" placeholder="Opcional según banco" />
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="field">
+                  <label for="admBankPhone">Teléfono Pago Móvil Receptor</label>
+                  <input type="text" id="admBankPhone" placeholder="0424-6003606" />
+                </div>
+                <div class="field">
+                  <label for="admBankRif">C.I. / RIF Receptor</label>
+                  <input type="text" id="admBankRif" placeholder="V-31.091.406" />
+                </div>
+              </div>
+
+              <div class="admin-bank-actions">
+                <button type="submit" class="btn btn--primary btn--sm">Guardar API Bancaria</button>
+                <button type="button" class="btn btn--glass btn--sm" id="adminTestBankBtn">Probar validación Ref #849201</button>
+              </div>
+              <div class="api-test-output" id="adminBankTestOut" hidden></div>
+            </form>
+          </div>
+        </div>
+
+        <!-- DIRECTORIO COMPLETO DE EMPRESAS Y USUARIOS -->
+        <div class="dash-card" style="margin-bottom:24px;">
+          <div class="dash-card__head">
+            <div>
+              <span class="card-kicker">Directorio Multi-Tenant</span>
+              <h2>Empresas, Roles, Bots y Consumo</h2>
+            </div>
+            <div class="admin-table-tools">
+              <input type="search" id="admUserSearch" class="chat-input" placeholder="Buscar empresa o correo..." />
+              <button type="button" class="btn btn--secondary btn--xs" id="admExportCsvBtn">Exportar CSV</button>
+            </div>
+          </div>
+
+          <div class="table-wrap table-wrap--light">
+            <table class="compare-table admin-users-table">
+              <thead>
+                <tr>
+                  <th>Empresa / Usuario</th>
+                  <th>Rol</th>
+                  <th>Plan</th>
+                  <th>Consumo (API / Bot)</th>
+                  <th>Estado Bot</th>
+                  <th>Acciones Superadmin</th>
+                </tr>
+              </thead>
+              <tbody id="admUsersBody">
+                <tr><td colspan="6" style="text-align:center;padding:26px;">Cargando empresas...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- FILA FINAL: CAMBIAR CLAVE SUPERADMIN + AUDITORÍA DEL SISTEMA -->
+        <div class="dash-grid-2">
+          <div class="dash-card">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">Seguridad de Cuenta</span>
+                <h2>Cambiar mi Contraseña</h2>
+              </div>
+            </div>
+            <form id="adminChangePassForm" class="dash-form">
+              <div class="field-light">
+                <label for="admCurPass">Contraseña actual</label>
+                <input type="password" id="admCurPass" required />
+              </div>
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="admNextPass">Nueva contraseña</label>
+                  <input type="password" id="admNextPass" minlength="6" required />
+                </div>
+                <div class="field-light">
+                  <label for="admNextPassConfirm">Confirmar nueva contraseña</label>
+                  <input type="password" id="admNextPassConfirm" minlength="6" required />
+                </div>
+              </div>
+              <button type="submit" class="btn btn--primary btn--full">Actualizar Contraseña</button>
+            </form>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">ISO/IEC 27001 · Trazabilidad</span>
+                <h2>Auditoría Reciente del Sistema</h2>
+              </div>
+            </div>
+            <div class="audit-list" id="admAuditLogs">Cargando registros...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="siteFooter"></div>
+  <div id="siteOverlays"></div>
+
+  <script src="config.js"></script>
+  <script src="layout.js"></script>
+  <script src="app.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

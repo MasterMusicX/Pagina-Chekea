@@ -1,0 +1,8 @@
+# Proteger credenciales sensibles (ISO/IEC 27001 A.5.17)
+.env
+.env.*
+!.env.example
+node_modules/
+.wwebjs_auth/
+.wwebjs_aut/
+*.log

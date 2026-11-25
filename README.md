@@ -1,26 +1,19 @@
-# Chekea — Web + Pasarela Pago Móvil conectada a `standalone-chatbot-api.ts` y `client-sales-bot.ts`
+# Ckekea — Sitio Multipágina conectado al Bot Max (+584166214410) y Chatbot-ApiRest
 
-Sitio web modular en **HTML5, CSS3 y JavaScript puro** conectado directamente a tus dos servicios backend para que, al confirmarse un pago, el cliente obtenga acceso inmediato al **Bot Comercial** y a su **API Key (`sk_live_...`)**.
+Arquitectura multipágina en **HTML5, CSS3 y JavaScript puro** integrada con los datos reales de `Chatbot-ApiRest` (`BOT_NAME="Max"`, `COMPANY_NAME="Ckekea"`, `WHATSAPP_ENABLED=true`, `WHATSAPP_BOT_NUMBER=+584166214410`, `WHATSAPP_SESSION_PATH=.wwebjs_aut`).
 
-## Flujo completo conectado
+## Páginas conectadas entre sí
 
-1. El cliente elige **Plan Estándar, Pro o Gold** y selecciona el **rubro del negocio** (`RETAIL`, `PHARMACY`, `TECH`, `HARDWARE`).
-2. Realiza el **Pago Móvil** a **Banco Mercantil (`0105`), C.I. `V-31.091.406`, Teléfono `0424-6003606`** y registra su referencia.
-3. Al confirmar el pago, la página llama automáticamente a:
-   - `POST {baseUrl}/api/v1/chatbot/api-keys/generate` (`standalone-chatbot-api.ts`) enviando `{ name, email, plan, business_type, whatsapp_phone, rotate_secret: false }`.
-4. Recibe `tenantId` y `apiKey` (`sk_live_...`) y **desbloquea inmediatamente el Portal Bot + API**:
-   - **Acceso API SaaS (`standalone-chatbot-api.ts`)**: Chat real contra `POST /api/v1/chatbot/message` (con `conversation_id`, calificación `POST /api/v1/chatbot/rate/:queryId` y soporte de imágenes Base64), listado de conversaciones (`GET /api/v1/chatbot/conversations`) y descarga de `.env.client-bot`.
-   - **Acceso Bot Comercial (`client-sales-bot.ts`)**: Estado en vivo + QR de WhatsApp (`GET /api/state`), chat directo (`POST /api/chat`), encender/apagar bot (`POST /api/toggle`), enlace al Panel QR (`/qr`) y descarga de **PDF de Cierre Semanal** (`GET /api/reports/weekly-pdf` con cabecera `X-Panel-Token`).
+- `index.html` — Inicio: Hero estilo Apple, carrusel *Ecosistema Ckekea*, tarjetas de navegación a cada página y controles de seguridad ISO/IEC 27001:2022 + OWASP API Top 10.
+- `chatbot.html` — **Max IA & Portal Bot + API**: consola interactiva con el flujo real de Max (`1️⃣ Planes`, `2️⃣ Demo de venta`, `3️⃣ Seguridad y ERP`, `4️⃣ Diagnóstico rápido`) + portal desbloqueable tras pagar con `X-API-Key`, QR WhatsApp, PDF de Cierre Semanal y descarga de `.env.client-bot`.
+- `planes.html` — **Planes Estándar, Pro y Gold**: precios USD/Bs con alternador Mensual/Anual, matriz comparativa completa (Ckekea App, API Bancaria anti-fraude, ERP Saint/Profit Plus/A2/Valery/Premium Soft) y pasarela Pago Móvil Mercantil.
+- `api-studio.html` — **API Studio**: configuración de `standalone-chatbot-api.ts` (`:3000`) y `client-sales-bot.ts` (`:3001`), carga de OpenAPI JSON, tabla de API Keys generadas y descarga de `config.js`.
+- `fundadores.html` — **Equipo Fundador & Contacto**: Fidel Pereira (Fundador), Jesús Romero (CEO) y José Davalillo (Ingeniero y Desarrollador de Software) con pop-ups detallados y contacto WhatsApp a Max (`+58 416-6214410`) y Pagos (`0424-6003606`).
 
-## Cómo encender tus backends y conectarlos
+## Archivos compartidos
 
-1. **En tu proyecto backend:**
-   - Inicia la API SaaS del Chatbot: `npm run dev:api` (por defecto en `http://localhost:3000`).
-   - Inicia el Bot Comercial: `npm run dev:client-bot` (por defecto en `http://localhost:3001`).
-   - En tu `.env`, asegúrate de que `FRONTEND_URL` permita el origen desde donde abres esta página (o déjalo vacío en desarrollo, ya que tus dos archivos usan `origin: true` cuando `FRONTEND_URL` no está definido).
-2. **En `config.js` (o en la sección API Studio de la página):**
-   - `baseUrl`: URL de `standalone-chatbot-api.ts` (ej. `http://localhost:3000` o tu URL de Railway).
-   - `masterApiToken`: tu API Key maestra/admin (`sk_live_...`) para autorizar la creación de nuevos tenants en `POST /api/v1/chatbot/api-keys/generate`.
-   - `clientBotBaseUrl`: URL de `client-sales-bot.ts` (ej. `http://localhost:3001` o tu URL de Railway).
-   - `clientBotPanelToken`: el valor de `CLIENT_PANEL_TOKEN` si lo configuraste en tu servidor.
-   - Si editas los campos en **API Studio**, pulsa **Descargar config.js** y reemplaza el archivo en esta carpeta para dejarlos guardados permanentemente.
+- `config.js` — Configuración editable a mano (datos de Max, Pago Móvil Mercantil `0105` / `V-31.091.406` / `0424-6003606`, planes, fundadores, seguridad y endpoints).
+- `layout.js` — Inyecta la barra de navegación con página activa, footer, dock flotante de Max y todos los modales (incluyendo la pasarela de pago fluida estilo *bottom sheet* móvil) en las 5 páginas.
+- `styles.css` — Diseño Apple responsive optimizado para pantallas móviles (`100dvh`, `16px` en inputs para evitar zoom en iOS, safe-area padding y modal deslizable).
+- `app.js` — Motor conversacional completo de Max, integración con `standalone-chatbot-api.ts` (mapeando `PlanType` a `LITE | PRO`), `client-sales-bot.ts` y persistencia compartida entre páginas.
+- `.nojekyll` — Desactiva Jekyll en GitHub Pages (configurar **Settings → Pages → Branch: `/ (root)`**).

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Dashboard privado de cliente Ckekea — Sube tu inventario, enciende/apaga tu bot a voluntad y sincroniza WhatsApp QR en vivo." />
+  <title>Mi Dashboard — Ckekea</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="dashboard">
+  <div id="siteHeader"></div>
+
+  <main class="dash-main">
+    <!-- CABECERA DEL DASHBOARD + INTERRUPTOR PRINCIPAL DEL BOT -->
+    <section class="dash-header">
+      <div class="container dash-header__inner">
+        <div>
+          <div class="dash-badges">
+            <span class="dash-pill dash-pill--plan" id="dashPlanBadge">PLAN PRO</span>
+            <span class="dash-pill dash-pill--pay" id="dashPayBadge">MODO PRUEBA</span>
+            <span class="dash-pill dash-pill--bot is-on" id="dashBotStateBadge">● Bot ENCENDIDO</span>
+          </div>
+          <h1 id="dashBusinessTitle">Cargando tu Dashboard...</h1>
+          <p id="dashUserSubtitle">Sincronizando tu cuenta con Neon PostgreSQL y Railway...</p>
+        </div>
+
+        <div class="dash-header__controls">
+          <a href="admin.html" class="btn btn--primary btn--sm" id="dashSuperadminBtn" hidden>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Panel Superadmin
+          </a>
+          <button type="button" class="btn-power is-on" id="dashBotToggleBtn">
+            <span class="btn-power__dot"></span>
+            <span id="dashBotToggleText">Apagar Bot</span>
+          </button>
+          <a href="https://chatbot-apirest-production.up.railway.app/" target="_blank" rel="noopener noreferrer" class="btn btn--glass btn--sm" id="dashOpenRailwayBtn">
+            Panel Railway ›
+          </a>
+          <button type="button" class="btn btn--ghost btn--sm" id="dashLogoutBtn">Cerrar sesión</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--tinted dash-content">
+      <div class="container">
+        <!-- FILA 1: KPIs -->
+        <div class="dash-kpis">
+          <div class="dash-kpi-card">
+            <span>Productos en Inventario</span>
+            <strong id="kpiInvCount">0</strong>
+            <small>Sincronizados en Neon DB</small>
+          </div>
+          <div class="dash-kpi-card">
+            <span>Unidades Totales en Stock</span>
+            <strong id="kpiInvUnits">0</strong>
+            <small>Listas para venta por el Bot</small>
+          </div>
+          <div class="dash-kpi-card">
+            <span>Estado WhatsApp / Bot</span>
+            <strong id="kpiWaStatus">Verificando</strong>
+            <small id="kpiRailwaySync">Conectando a Railway...</small>
+          </div>
+          <div class="dash-kpi-card">
+            <span>Tu API Key Activa</span>
+            <strong class="kpi-key-short" id="kpiApiKeyPreview">sk_live_...</strong>
+            <button type="button" class="link-inline" id="dashCopyApiKeyBtn">Copiar X-API-Key</button>
+          </div>
+        </div>
+
+        <!-- FILA 2: WHATSAPP QR SYNC + CONFIGURACIÓN DEL BOT -->
+        <div class="dash-grid-2">
+          <!-- Tarjeta de Sincronización WhatsApp QR (como chatbot-apirest-production.up.railway.app) -->
+          <div class="dash-card dash-card--dark">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">Sincronización WhatsApp</span>
+                <h2>Vincular WhatsApp por QR o Código</h2>
+              </div>
+              <button type="button" class="btn btn--glass btn--xs" id="dashRefreshBotBtn">Actualizar estado</button>
+            </div>
+
+            <div class="dash-wa-layout">
+              <div class="dash-qr-frame">
+                <img id="dashQrImg" src="" alt="Código QR WhatsApp" hidden />
+                <div class="dash-qr-empty" id="dashQrPlaceholder">
+                  <strong>WhatsApp QR</strong>
+                  <p>Escanea el código desde <em>WhatsApp → Dispositivos vinculados</em> cuando esté disponible.</p>
+                </div>
+              </div>
+
+              <div class="dash-wa-controls">
+                <p id="dashWaHelpText">
+                  Conectado al servidor de bots en <code>chatbot-apirest-production.up.railway.app</code>. Puedes encender o apagar el bot a voluntad con el botón superior o vincular por código numérico.
+                </p>
+
+                <form id="dashPairingForm" class="dash-inline-form">
+                  <input type="tel" id="dashPairingPhone" placeholder="Ej. 584166214410" required />
+                  <button type="submit" class="btn btn--primary btn--sm">Pedir Código</button>
+                </form>
+                <div class="dash-pairing-out" id="dashPairingOut" hidden></div>
+
+                <div class="dash-wa-links">
+                  <a href="https://chatbot-apirest-production.up.railway.app/" target="_blank" rel="noopener noreferrer" class="btn btn--whatsapp btn--sm">
+                    Abrir Panel Completo en Railway ›
+                  </a>
+                  <button type="button" class="btn btn--glass btn--sm" id="dashDownloadEnvBtn">
+                    Descargar .env.client-bot
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta de Personalización del Bot y Plan -->
+          <div class="dash-card">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">Identidad del Bot</span>
+                <h2>Configuración de tu Negocio</h2>
+              </div>
+              <button type="button" class="btn btn--primary btn--xs" data-open-payment="pro">Activar / Mejorar Plan</button>
+            </div>
+
+            <form id="dashBotSettingsForm" class="dash-form">
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="setBotName">Nombre del Bot</label>
+                  <input type="text" id="setBotName" placeholder="Max" required />
+                </div>
+                <div class="field-light">
+                  <label for="setBusinessName">Nombre del Comercio</label>
+                  <input type="text" id="setBusinessName" required />
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="setBusinessType">Rubro</label>
+                  <select id="setBusinessType">
+                    <option value="RETAIL">Comercio / Retail</option>
+                    <option value="PHARMACY">Farmacia / Salud</option>
+                    <option value="TECH">Tecnología</option>
+                    <option value="HARDWARE">Ferretería / Repuestos</option>
+                  </select>
+                </div>
+                <div class="field-light">
+                  <label for="setWhatsappPhone">WhatsApp del Negocio</label>
+                  <input type="tel" id="setWhatsappPhone" placeholder="+584166214410" />
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="setHours">Horario de atención</label>
+                  <input type="text" id="setHours" placeholder="Lunes a Sábado 8am - 7pm" />
+                </div>
+                <div class="field-light">
+                  <label for="setDelivery">Envíos / Delivery</label>
+                  <input type="text" id="setDelivery" placeholder="Sí, hacemos delivery y retiro en tienda" />
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn--primary btn--full">Guardar configuración en Neon DB</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- FILA 3: SUBIR INVENTARIO PARA QUE EL BOT LO ANALICE + PROBADOR EN VIVO -->
+        <div class="dash-grid-inv">
+          <!-- Gestor de Inventario -->
+          <div class="dash-card">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">Cerebro del Bot · Neon PostgreSQL</span>
+                <h2>Sube tu Inventario para que el Bot lo asimile</h2>
+              </div>
+              <button type="button" class="btn btn--secondary btn--xs" id="downloadCsvTemplateBtn">Descargar Plantilla CSV</button>
+            </div>
+
+            <!-- Carga masiva CSV / JSON -->
+            <div class="inv-dropzone" id="invDropzone">
+              <input type="file" id="invFileInput" accept=".csv,.json,text/csv,application/json" hidden />
+              <div>
+                <strong>Arrastra tu archivo CSV o JSON aquí</strong>
+                <p>Columnas CSV: <code>sku,nombre,precio,stock,categoria,presentacion,marca</code></p>
+              </div>
+              <button type="button" class="btn btn--primary btn--sm" id="invBrowseBtn">Subir archivo CSV / JSON</button>
+            </div>
+
+            <!-- Agregar producto individual -->
+            <form id="addProductForm" class="inv-quick-form">
+              <div class="inv-quick-grid">
+                <input type="text" id="prodSku" placeholder="SKU (ej. FAR-001)" />
+                <input type="text" id="prodName" placeholder="Nombre del producto *" required />
+                <input type="number" id="prodPrice" step="0.01" min="0.01" placeholder="Precio USD *" required />
+                <input type="number" id="prodQty" min="0" placeholder="Stock *" required />
+                <input type="text" id="prodCategory" placeholder="Categoría / Principio" />
+                <input type="text" id="prodPresentation" placeholder="Presentación (ej. Caja x10)" />
+              </div>
+              <button type="submit" class="btn btn--primary btn--sm">+ Agregar producto al inventario</button>
+            </form>
+
+            <!-- Buscador + Tabla -->
+            <div class="inv-search-bar">
+              <input type="search" id="invSearchInput" class="chat-input" placeholder="Buscar producto en tu inventario por nombre, SKU o categoría..." />
+            </div>
+
+            <div class="table-wrap table-wrap--light">
+              <table class="compare-table inv-table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="invTableBody">
+                  <tr><td colspan="6" style="text-align:center;padding:24px;color:#6e6e73;">Cargando inventario...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Probador en vivo del Bot leyendo TU inventario real en Neon -->
+          <div class="chat-panel dash-chat-panel">
+            <div class="chat-panel__header">
+              <div class="chat-agent">
+                <div class="chat-agent__avatar">IA</div>
+                <div>
+                  <strong id="dashTestBotTitle">Probar tu Bot con tu Inventario</strong>
+                  <span class="chat-agent__status"><span class="status-dot status-dot--green"></span>Lee tus productos reales de Neon + IA</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn--ghost-dark btn--xs" id="dashClearTestChat">Limpiar</button>
+            </div>
+
+            <div class="chat-panel__messages" id="dashTestChatMessages"></div>
+
+            <div class="chat-quick-prompts">
+              <button type="button" class="prompt-chip dash-test-chip" data-test-msg="Hola, muéstrame el catálogo disponible">Ver mi catálogo</button>
+              <button type="button" class="prompt-chip dash-test-chip" data-test-msg="¿Qué horario y delivery tienen?">Horario y delivery</button>
+              <button type="button" class="prompt-chip dash-test-chip" data-test-msg="¿Cuál es el producto más económico que tienes en stock?">Más económico</button>
+            </div>
+
+            <form id="dashTestChatForm" class="chat-panel__form">
+              <input type="text" id="dashTestChatInput" class="chat-input" placeholder="Pregunta por un producto que subiste..." autocomplete="off" required />
+              <button type="submit" class="btn btn--primary btn--icon" aria-label="Probar Bot">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- FILA 4: API BANCARIA AUTOMÁTICA DEL COMERCIO + CAMBIO DE CONTRASEÑA -->
+        <div class="dash-grid-2" style="margin-top:24px;">
+          <!-- Integración API Bancaria del Comercio -->
+          <div class="dash-card">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">Conciliación Automática de Pago Móvil</span>
+                <h2>API Bancaria de tu Bot</h2>
+              </div>
+              <span class="dash-pill dash-pill--pay-light" id="dashBankBadge">MANUAL</span>
+            </div>
+
+            <form id="dashBankConfigForm" class="dash-form">
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="uBankProvider">Banco Venezolano</label>
+                  <select id="uBankProvider">
+                    <option value="MERCANTIL">Banco Mercantil (0105)</option>
+                    <option value="BDV">Banco de Venezuela (0102)</option>
+                    <option value="BANESCO">Banesco (0134)</option>
+                    <option value="BNC">BNC (0191)</option>
+                    <option value="BANCAMIGA">Bancamiga (0172)</option>
+                    <option value="CUSTOM">API Personalizada</option>
+                  </select>
+                </div>
+                <div class="field-light">
+                  <label for="uBankMode">Modo de Validación</label>
+                  <select id="uBankMode">
+                    <option value="MANUAL">MANUAL (Validación en caja)</option>
+                    <option value="BANK_API">BANK_API (Automática con banco)</option>
+                    <option value="SIMULATED">SIMULATED (Pruebas automáticas)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="field-light">
+                <label for="uBankUrl">URL Endpoint del Banco (cuando tengas acceso)</label>
+                <input type="url" id="uBankUrl" placeholder="https://api.banco.com/v1/pagomovil/verify" />
+              </div>
+
+              <div class="form-row-2">
+                <div class="field-light">
+                  <label for="uBankKey">API Key / Client ID</label>
+                  <input type="password" id="uBankKey" placeholder="Opcional hasta recibir credenciales" />
+                </div>
+                <div class="field-light">
+                  <label for="uBankSecret">Client Secret (HMAC)</label>
+                  <input type="password" id="uBankSecret" placeholder="Opcional" />
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <button type="submit" class="btn btn--primary btn--full">Guardar API Bancaria</button>
+                <button type="button" class="btn btn--secondary btn--full" id="dashTestBankBtn">Probar validación Ref #849201</button>
+              </div>
+              <div class="api-test-output api-test-output--light" id="dashBankTestOut" hidden></div>
+            </form>
+          </div>
+
+          <!-- Cambio de Contraseña del Usuario -->
+          <div class="dash-card">
+            <div class="dash-card__head">
+              <div>
+                <span class="card-kicker">Seguridad de Cuenta · Hash scrypt</span>
+                <h2>Cambiar mi Contraseña</h2>
+              </div>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0071e3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+
+            <form id="dashChangePasswordForm" class="dash-form">
+              <div class="field-light">
+                <label for="curPassInput">Contraseña actual</label>
+                <input type="password" id="curPassInput" autocomplete="current-password" required />
+              </div>
+              <div class="field-light">
+                <label for="newPassInput">Nueva contraseña (mín. 6 caracteres)</label>
+                <input type="password" id="newPassInput" minlength="6" autocomplete="new-password" required />
+              </div>
+              <div class="field-light">
+                <label for="confirmNewPassInput">Confirmar nueva contraseña</label>
+                <input type="password" id="confirmNewPassInput" minlength="6" autocomplete="new-password" required />
+              </div>
+              <button type="submit" class="btn btn--primary btn--full">Actualizar Contraseña</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="siteFooter"></div>
+  <div id="siteOverlays"></div>
+
+  <script src="config.js"></script>
+  <script src="layout.js"></script>
+  <script src="app.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

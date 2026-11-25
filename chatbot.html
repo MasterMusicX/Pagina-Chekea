@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Conversa con Max, el asistente oficial de Ckekea (+584166214410), prueba el flujo de ventas y accede al Portal Bot + API al activar tu plan." />
+  <title>Max IA &amp; Portal Bot + API — Ckekea</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="chatbot">
+  <div id="siteHeader"></div>
+
+  <main>
+    <!-- CABECERA DE PÁGINA -->
+    <section class="page-hero">
+      <div class="container">
+        <div class="eyebrow reveal">
+          <span class="eyebrow__dot"></span>
+          BOT_NAME="Max" · COMPANY_NAME="Ckekea" · WHATSAPP +58 416-6214410
+        </div>
+        <h1 class="page-hero__title reveal">Conoce a Max y controla<br /><span class="text-gradient">tu Bot Comercial y tu API.</span></h1>
+        <p class="page-hero__subtitle reveal">
+          El asistente de esta página opera con el mismo flujo real de <strong>Max de Ckekea</strong> (Planes, Demo interactiva de venta, Seguridad/ERP y Diagnóstico rápido). Al pagar tu plan desbloqueas tu <code>X-API-Key</code>, el QR de WhatsApp y el PDF de Cierre Semanal.
+        </p>
+        <div class="page-hero__actions reveal">
+          <button type="button" class="btn btn--primary" data-open-payment="pro">Pagar y Desbloquear Bot + API</button>
+          <button type="button" class="btn btn--whatsapp" data-open-whatsapp>Chatear con Max en WhatsApp (+58 416-6214410)</button>
+          <a href="planes.html" class="btn btn--glass">Comparar Planes ›</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- PORTAL DE ACCESO + CONSOLA INTERACTIVA DE MAX -->
+    <section class="section section--tinted" id="chatbot">
+      <div class="container">
+        <!-- Barra de estado de acceso del cliente -->
+        <div class="access-status-bar reveal" id="accessStatusBar">
+          <div class="access-status-bar__left">
+            <span class="access-pill access-pill--locked" id="accessStatusPill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Portal API/Bot Bloqueado — Modo Asesor Max Activo
+            </span>
+            <p id="accessStatusMeta">Puedes conversar ahora mismo con <strong>Max</strong> en el chat de abajo. Paga un plan para desbloquear tu <code>X-API-Key</code> real, el QR WhatsApp y tu Cierre Semanal PDF.</p>
+          </div>
+          <div class="access-status-bar__actions">
+            <button type="button" class="btn btn--secondary btn--sm" id="openUnlockModalBtn">Ya tengo mi API Key</button>
+            <button type="button" class="btn btn--primary btn--sm" id="accessPrimaryCta" data-open-payment="pro">Pagar y Desbloquear</button>
+            <button type="button" class="btn btn--ghost-dark btn--sm" id="logoutAccessBtn" hidden>Cerrar sesión</button>
+          </div>
+        </div>
+
+        <!-- PORTAL DESBLOQUEADO (oculto hasta pagar o ingresar API Key) -->
+        <div class="unlocked-portal" id="unlockedPortal" hidden>
+          <div class="portal-card">
+            <div class="portal-card__head">
+              <div>
+                <span class="card-kicker">1. API SaaS (standalone-chatbot-api.ts)</span>
+                <h3 id="portalClientTitle">Credenciales Activas</h3>
+              </div>
+              <span class="verified-chip" id="portalPlanBadge">PLAN PRO</span>
+            </div>
+
+            <div class="portal-creds">
+              <div class="cred-row">
+                <span>X-API-Key asignada</span>
+                <div class="cred-row__val">
+                  <code id="portalApiKeyText">sk_live_...</code>
+                  <button type="button" class="btn btn--secondary btn--xs" id="portalCopyKeyBtn">Copiar</button>
+                </div>
+              </div>
+              <div class="cred-row">
+                <span>Tenant ID / Rubro</span>
+                <div class="cred-row__val">
+                  <code id="portalTenantMeta">—</code>
+                </div>
+              </div>
+              <div class="cred-row">
+                <span>Endpoint Chatbot API</span>
+                <div class="cred-row__val">
+                  <code id="portalChatEndpointText">POST http://localhost:3000/api/v1/chatbot/message</code>
+                </div>
+              </div>
+              <div class="cred-row">
+                <span>Endpoint Stock / Inventario</span>
+                <div class="cred-row__val">
+                  <code id="portalStockEndpointText">POST http://localhost:3000/api/v1/stock/import</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="portal-card__footer">
+              <button type="button" class="btn btn--primary btn--sm" id="downloadClientEnvBtn">Descargar .env.client-bot</button>
+              <button type="button" class="btn btn--secondary btn--sm" id="loadConversationsBtn">Ver conversaciones API</button>
+              <a href="api-studio.html" class="btn btn--glass btn--sm">Configurar en API Studio</a>
+            </div>
+            <div class="portal-convs" id="portalConversationsBox" hidden></div>
+          </div>
+
+          <div class="portal-card">
+            <div class="portal-card__head">
+              <div>
+                <span class="card-kicker">2. Bot Comercial WhatsApp (client-sales-bot.ts)</span>
+                <h3 id="botServiceTitle">Panel del Bot Comercial</h3>
+              </div>
+              <span class="status-pill status-pill--active" id="botLiveStatusPill">Verificando...</span>
+            </div>
+
+            <div class="bot-live-grid">
+              <div class="bot-live-info">
+                <p id="botLiveDesc">Sincroniza con tu instancia de <code>client-sales-bot.ts</code> para vincular WhatsApp, encender/apagar el bot y descargar tu Cierre Semanal en PDF.</p>
+                <div class="bot-kpis" id="botWeeklyKpis">
+                  <div><strong id="kpiWeeklySold">$0.00</strong><span>Vendido semana</span></div>
+                  <div><strong id="kpiWeeklyPaid">0</strong><span>Pagados</span></div>
+                  <div><strong id="kpiWeeklyPending">0</strong><span>Pendientes</span></div>
+                </div>
+                <div class="portal-card__footer">
+                  <button type="button" class="btn btn--primary btn--sm" id="refreshBotStateBtn">Sincronizar Bot</button>
+                  <button type="button" class="btn btn--secondary btn--sm" id="toggleClientBotBtn">Encender / Apagar</button>
+                  <button type="button" class="btn btn--secondary btn--sm" id="downloadWeeklyPdfBtn">PDF Cierre Semanal</button>
+                  <a href="http://localhost:3001/qr" target="_blank" rel="noopener noreferrer" class="btn btn--whatsapp btn--sm" id="openBotPanelLink">Abrir Panel QR ›</a>
+                </div>
+              </div>
+              <div class="bot-qr-box" id="botQrBox">
+                <img id="botQrImg" src="" alt="Código QR WhatsApp del Bot" hidden />
+                <div class="bot-qr-placeholder" id="botQrPlaceholder">
+                  <strong>WhatsApp QR</strong>
+                  <span>Pulsa "Sincronizar Bot" con <code>client-sales-bot.ts</code> activo para ver el QR aquí.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BENTO: VISUAL + CONSOLA INTERACTIVA DE MAX -->
+        <div class="bento-chatbot">
+          <div class="bento-visual-card reveal">
+            <img
+              src="assets/ai-architecture.jpg"
+              alt="Motor conversacional Max de Ckekea"
+              class="bento-visual-card__img"
+              id="aiArchitectureImage"
+            />
+            <div class="bento-visual-card__overlay">
+              <span class="badge-pill">Asesor Max · WhatsApp +58 416-6214410</span>
+              <h3>Flujo comercial real integrado en la web</h3>
+              <p>Escribe <strong>1</strong> para Planes, <strong>2</strong> para la Demo interactiva de venta (Combo Emprendedor), <strong>3</strong> para Seguridad/ERP o <strong>4</strong> para el Diagnóstico rápido de tu comercio.</p>
+              <div class="metrics-mini">
+                <div>
+                  <strong>Max IA</strong>
+                  <span>OpenRouter + Fallback</span>
+                </div>
+                <div>
+                  <strong>Base64</strong>
+                  <span>Récipes y pagos</span>
+                </div>
+                <div>
+                  <strong>.wwebjs_aut</strong>
+                  <span>Sesión WhatsApp</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-panel reveal" aria-label="Consola interactiva de Max de Ckekea">
+            <div class="chat-panel__header">
+              <div class="chat-agent">
+                <div class="chat-agent__avatar">M</div>
+                <div>
+                  <strong>Max · Asesor Ckekea</strong>
+                  <span class="chat-agent__status" id="chatConnectionBadge">
+                    <span class="status-dot status-dot--green"></span>
+                    Max Bot Activo · +58 416-6214410
+                  </span>
+                </div>
+              </div>
+              <div class="chat-header-controls">
+                <select id="chatEngineSelect" class="chat-engine-select" aria-label="Motor del Chatbot">
+                  <option value="max_local">Max Ckekea (Web)</option>
+                  <option value="standalone_api">API SaaS (:3000)</option>
+                  <option value="client_bot">Bot Comercial (:3001)</option>
+                </select>
+                <button type="button" class="btn btn--ghost-dark btn--xs" id="clearChatBtn">Reiniciar</button>
+              </div>
+            </div>
+
+            <div class="chat-panel__messages" id="embeddedChatMessages" role="log" aria-live="polite"></div>
+
+            <div class="chat-lock-banner" id="chatLockBanner">
+              <span class="inline-svg-text">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4v2h1a3 3 0 0 1 3 3v7a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-7a3 3 0 0 1 3-3h1V6a4 4 0 0 1 4-4z"/></svg>
+                Hablas con <strong>Max</strong> en vivo. Para activar tu <strong>API Key</strong> y Bot propio, contrata un plan.
+              </span>
+              <button type="button" class="btn btn--primary btn--xs" data-open-payment="pro">Activar Plan</button>
+            </div>
+
+            <div class="chat-quick-prompts" id="chatQuickPrompts">
+              <button type="button" class="prompt-chip" data-prompt="1">1. Planes</button>
+              <button type="button" class="prompt-chip" data-prompt="2">2. Demo de venta</button>
+              <button type="button" class="prompt-chip" data-prompt="3">3. Seguridad y ERP</button>
+              <button type="button" class="prompt-chip" data-prompt="4">4. Diagnóstico rápido</button>
+              <button type="button" class="prompt-chip" data-prompt="whatsapp">Pasar a WhatsApp</button>
+            </div>
+
+            <form class="chat-panel__form" id="embeddedChatForm">
+              <input type="file" id="chatImageInput" accept="image/*" hidden />
+              <button type="button" class="btn btn--secondary btn--icon" id="chatAttachImageBtn" title="Adjuntar imagen de récipe o comprobante (Base64)" aria-label="Adjuntar imagen">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </button>
+              <input
+                type="text"
+                id="embeddedChatInput"
+                class="chat-input"
+                placeholder="Escribe 1, 2, 3, 4 o conversa con Max..."
+                autocomplete="off"
+              />
+              <button type="submit" class="btn btn--primary btn--icon" aria-label="Enviar mensaje">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </form>
+            <div class="chat-attachment-bar" id="chatAttachmentBar" hidden>
+              <span id="chatAttachmentName">Imagen adjunta</span>
+              <button type="button" class="btn btn--ghost-dark btn--xs" id="clearChatAttachmentBtn">Quitar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ENLACE A SIGUIENTES PÁGINAS -->
+    <section class="section section--light">
+      <div class="container">
+        <div class="page-nav-strip reveal">
+          <a href="planes.html" class="page-nav-card">
+            <span>Siguiente paso</span>
+            <strong>Comparar Planes Estándar, Pro y Gold ›</strong>
+          </a>
+          <a href="api-studio.html" class="page-nav-card">
+            <span>Para desarrolladores</span>
+            <strong>Conectar endpoints en API Studio ›</strong>
+          </a>
+          <a href="fundadores.html" class="page-nav-card">
+            <span>Conoce al equipo</span>
+            <strong>Ver Fundadores de Ckekea ›</strong>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="siteFooter"></div>
+  <div id="siteOverlays"></div>
+
+  <script src="config.js"></script>
+  <script src="layout.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

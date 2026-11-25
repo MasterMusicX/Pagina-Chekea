@@ -1,0 +1,18 @@
+{
+  "name": "ckekea-web-platform",
+  "version": "2.0.0",
+  "description": "Ckekea Web Platform + Multi-Tenant Client Dashboard (Neon PostgreSQL + Railway Bot Integration)",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^8.5.1",
+    "node-fetch": "^2.7.0",
+    "pg": "8.11.3"
+  }
+}

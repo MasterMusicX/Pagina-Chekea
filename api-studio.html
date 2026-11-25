@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Ckekea API Studio — Conecta standalone-chatbot-api.ts y client-sales-bot.ts, sube tu OpenAPI JSON y administra las API Keys generadas tras cada pago." />
+  <title>API Studio &amp; Webhooks — Ckekea</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="api-studio">
+  <div id="siteHeader"></div>
+
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <div class="eyebrow reveal">
+          <span class="eyebrow__dot"></span>
+          Chatbot-ApiRest v2.0 · Node.js · TypeScript · Express · Prisma · ISO 27001
+        </div>
+        <h1 class="page-hero__title reveal">API Studio.<br /><span class="text-gradient">Sube tu API y automatiza llaves.</span></h1>
+        <p class="page-hero__subtitle reveal">
+          Configura las URLs de <strong>standalone-chatbot-api.ts</strong> y <strong>client-sales-bot.ts</strong>, carga especificaciones OpenAPI JSON, revisa cada API Key generada tras un pago y exporta tu <code>config.js</code> listo para producción.
+        </p>
+        <div class="page-hero__actions reveal">
+          <button type="button" class="btn btn--glass" id="exportConfigBtn">Descargar config.js</button>
+          <button type="button" class="btn btn--primary" data-open-payment="pro">Simular pago y generar API Key</button>
+          <a href="chatbot.html" class="btn btn--glass">Ir al Portal Bot ›</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--dark section--tight-top" id="api-studio">
+      <div class="container">
+        <div class="studio-shell reveal">
+          <div class="studio-tabs" role="tablist" aria-label="Secciones de API Studio">
+            <button type="button" class="studio-tab is-active" role="tab" aria-selected="true" data-studio-tab="config">
+              1. Conectar Backends &amp; Bot
+            </button>
+            <button type="button" class="studio-tab" role="tab" aria-selected="false" data-studio-tab="upload">
+              2. Subir Especificación (.json)
+            </button>
+            <button type="button" class="studio-tab" role="tab" aria-selected="false" data-studio-tab="keys">
+              3. API Keys Generadas <span class="tab-counter" id="keysCountBadge">0</span>
+            </button>
+            <button type="button" class="studio-tab" role="tab" aria-selected="false" data-studio-tab="snippets">
+              4. Código de Integración
+            </button>
+          </div>
+
+          <!-- TAB 1: Configuración -->
+          <div class="studio-panel is-active" data-studio-panel="config">
+            <form id="apiConfigForm" class="studio-form">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="cfgBaseUrl">URL Base — Standalone Chatbot API (:3000)</label>
+                  <input type="url" id="cfgBaseUrl" placeholder="http://localhost:3000" required />
+                  <small>Servidor de <code>standalone-chatbot-api.ts</code> (local o Railway HTTPS).</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgClientBotUrl">URL Base — Bot Comercial WhatsApp (:3001)</label>
+                  <input type="url" id="cfgClientBotUrl" placeholder="http://localhost:3001" />
+                  <small>Servidor de <code>client-sales-bot.ts</code> (QR, /api/chat y PDF semanal).</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgChatEndpoint">Endpoint del Chatbot API</label>
+                  <input type="text" id="cfgChatEndpoint" placeholder="/api/v1/chatbot/message" required />
+                  <small>Ruta POST de <code>ChatbotApiController::sendMessage</code>.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgProvisionEndpoint">Endpoint Generador de API Key (Al Pagar)</label>
+                  <input type="text" id="cfgProvisionEndpoint" placeholder="/api/v1/chatbot/api-keys/generate" required />
+                  <small>Crea el Tenant (<code>LITE</code>/<code>PRO</code>) y devuelve <code>sk_live_...</code>.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgMode">Modo de Provisión</label>
+                  <select id="cfgMode">
+                    <option value="local_plus_webhook">Híbrido (Llama a tu API real; si está apagada usa respaldo local)</option>
+                    <option value="remote_only">Remoto estricto (Exige respuesta 201 real de tu servidor)</option>
+                  </select>
+                  <small>En producción con Railway/VPS puedes activar modo remoto estricto.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgAuthHeader">Cabecera de Autenticación API</label>
+                  <input type="text" id="cfgAuthHeader" placeholder="X-API-Key" />
+                  <small><code>X-API-Key</code> (recomendada) o <code>Authorization</code>.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgMasterToken">API Key Maestra Admin (para crear clientes)</label>
+                  <input type="password" id="cfgMasterToken" placeholder="sk_live_admin_••••••••••••" />
+                  <small>Requerida por <code>authenticate</code> en <code>/api/v1/chatbot/api-keys/generate</code>.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgBotPanelToken">CLIENT_PANEL_TOKEN (Bot Comercial :3001)</label>
+                  <input type="password" id="cfgBotPanelToken" placeholder="Token opcional del panel /api/*" />
+                  <small>Se envía en <code>X-Panel-Token</code> hacia <code>client-sales-bot.ts</code>.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgKeyPrefix">Prefijo de Respaldo Local</label>
+                  <input type="text" id="cfgKeyPrefix" placeholder="sk_live_" />
+                  <small>Solo usado si el servidor backend no está encendido al probar.</small>
+                </div>
+
+                <div class="field">
+                  <label for="cfgExchangeRate">Tasa BCV Referencial (Bs / USD)</label>
+                  <input type="number" id="cfgExchangeRate" step="0.01" min="1" placeholder="52.50" />
+                  <small>Actualiza al instante el equivalente en Bolívares en todas las páginas.</small>
+                </div>
+              </div>
+
+              <div class="studio-form__footer">
+                <label class="switch-label">
+                  <input type="checkbox" id="cfgAutoGenerate" checked />
+                  <span>Generar automáticamente una API Key única tras cada pago confirmado</span>
+                </label>
+                <div class="studio-form__btns">
+                  <button type="button" class="btn btn--glass" id="testApiConnectionBtn">Probar /health en ambos</button>
+                  <button type="submit" class="btn btn--primary">Guardar configuración</button>
+                </div>
+              </div>
+              <div class="api-test-output" id="apiTestOutput" hidden></div>
+            </form>
+          </div>
+
+          <!-- TAB 2: Subir OpenAPI JSON -->
+          <div class="studio-panel" data-studio-panel="upload">
+            <div class="upload-layout">
+              <div class="dropzone" id="apiDropzone">
+                <input type="file" id="apiSpecFileInput" accept=".json,application/json" hidden />
+                <div class="dropzone__icon" aria-hidden="true">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <h3>Arrastra tu archivo OpenAPI / Swagger JSON aquí</h3>
+                <p>O selecciona un archivo <code>.json</code> desde tu equipo para documentar tus endpoints.</p>
+                <button type="button" class="btn btn--primary btn--sm" id="browseSpecBtn">Seleccionar archivo JSON</button>
+              </div>
+
+              <div class="spec-preview">
+                <div class="spec-preview__head">
+                  <div>
+                    <span class="card-kicker">API Cargada Actualmente</span>
+                    <h4 id="loadedSpecTitle">Ckekea Chatbot-ApiRest v2.0</h4>
+                  </div>
+                  <span class="spec-file-pill" id="loadedSpecFilename">ckekea-chatbot-apirest-v2.json</span>
+                </div>
+                <p class="spec-preview__desc" id="loadedSpecDesc"></p>
+                <div class="spec-endpoints" id="loadedSpecEndpoints"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Llaves API Generadas -->
+          <div class="studio-panel" data-studio-panel="keys">
+            <div class="keys-toolbar">
+              <div>
+                <h4>Registro de API Keys emitidas por pago</h4>
+                <p>Pulsa <strong>Usar</strong> en cualquier llave para activar esa sesión en la página de Max &amp; Portal Bot.</p>
+              </div>
+              <div class="keys-toolbar__actions">
+                <button type="button" class="btn btn--glass btn--sm" id="exportKeysJsonBtn">Exportar JSON</button>
+                <button type="button" class="btn btn--primary btn--sm" id="manualGenerateKeyBtn">+ Generar Key de prueba</button>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="keys-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Plan</th>
+                    <th>Ref. Mercantil</th>
+                    <th>API Key Generada</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="generatedKeysBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB 4: Snippets -->
+          <div class="studio-panel" data-studio-panel="snippets">
+            <div class="snippets-grid">
+              <div class="code-card">
+                <div class="code-card__head">
+                  <span>cURL — Consulta a standalone-chatbot-api.ts</span>
+                  <button type="button" class="btn btn--ghost btn--xs" data-copy-target="curlSnippet">Copiar</button>
+                </div>
+                <pre><code id="curlSnippet"></code></pre>
+              </div>
+
+              <div class="code-card">
+                <div class="code-card__head">
+                  <span>JavaScript (fetch) — Consumo con X-API-Key</span>
+                  <button type="button" class="btn btn--ghost btn--xs" data-copy-target="jsSnippet">Copiar</button>
+                </div>
+                <pre><code id="jsSnippet"></code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--light">
+      <div class="container">
+        <div class="page-nav-strip reveal">
+          <a href="chatbot.html" class="page-nav-card">
+            <span>Probar en vivo</span>
+            <strong>Abrir Consola de Max y Portal Bot ›</strong>
+          </a>
+          <a href="planes.html" class="page-nav-card">
+            <span>Planes y Pagos</span>
+            <strong>Ver Estándar, Pro y Gold ›</strong>
+          </a>
+          <a href="index.html" class="page-nav-card">
+            <span>Volver al inicio</span>
+            <strong>Ir a la página principal ›</strong>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="siteFooter"></div>
+  <div id="siteOverlays"></div>
+
+  <script src="config.js"></script>
+  <script src="layout.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
