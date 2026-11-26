@@ -149,20 +149,10 @@
           </nav>
           <div class="mobile-menu__actions">
             <a href="login.html" class="btn btn--secondary btn--full" id="mobileLoginLink">Iniciar Sesión / Crear Cuenta</a>
-            <button type="button" class="btn btn--primary btn--full" data-open-payment="pro">Pagar y Desbloquear Bot + API</button>
-            <button type="button" class="btn btn--whatsapp btn--full" data-open-whatsapp>Hablar con Max (${BASE.bot.whatsappNumberDisplay})</button>
+            <button type="button" class="btn btn--primary btn--full" data-open-payment="pro">Contratar Plan</button>
           </div>
         </div>
       </header>
-
-      <div class="ribbon">
-        <div class="container ribbon__inner">
-          <p>
-            Bot <strong>${BASE.bot.name}</strong> activo en WhatsApp <strong>${BASE.bot.whatsappNumberDisplay}</strong> · Pasarela <strong>Mercantil (0105)</strong> con API Key al instante.
-            <a href="planes.html" class="ribbon__link">Explorar Planes Estándar, Pro y Gold ›</a>
-          </p>
-        </div>
-      </div>
     `;
   }
 
@@ -175,7 +165,7 @@
         <footer class="footer footer--workspace">
           <div class="container container--workspace">
             <div class="footer__bottom" style="padding-top:0;">
-              <p>© <span id="footerYear">${BASE.brand.year}</span> ${BASE.brand.name} · Consola Privada (Neon PostgreSQL + Baileys WhatsApp).</p>
+              <p>© <span id="footerYear">${BASE.brand.year}</span> ${BASE.brand.name} · Panel de Gestión.</p>
               <p><a href="index.html" style="color:var(--apple-blue);font-weight:500;">Ir a la web pública ›</a></p>
             </div>
           </div>
@@ -190,37 +180,28 @@
           <div class="footer__top">
             <div class="footer__brand">
               <strong>${BASE.brand.name}</strong>
-              <p>Ecosistema de ventas con IA 24/7 (Max), ${BASE.brand.appName}, API Bancaria anti-fraude e integración ERP en Venezuela.</p>
+              <p>Asistente de ventas con inteligencia artificial en WhatsApp, control de inventario y cobros automáticos para tu negocio.</p>
             </div>
             <div class="footer__cols">
               <div>
                 <h4>Páginas</h4>
                 <a href="index.html">Inicio</a>
-                <a href="login.html">Iniciar Sesión / Registro</a>
-                <a href="chatbot.html">Max IA &amp; Portal Bot</a>
-                <a href="planes.html">Planes Estándar, Pro y Gold</a>
-                <a href="api-studio.html">API Studio &amp; Webhooks</a>
+                <a href="chatbot.html">Max IA</a>
+                <a href="planes.html">Planes y Precios</a>
+                <a href="api-studio.html">API Studio</a>
                 <a href="fundadores.html">Equipo Fundador</a>
               </div>
               <div>
-                <h4>Bot Max (WhatsApp)</h4>
-                <span>Bot Oficial: <strong>${BASE.bot.name} (${BASE.brand.name})</strong></span>
-                <span>WhatsApp Bot: <strong>${BASE.bot.whatsappNumberDisplay}</strong></span>
-                <span>Sesión: <code>${BASE.bot.whatsappSessionPath}</code></span>
+                <h4>Atención y Cuenta</h4>
+                <span>Asistente Virtual: <strong>${BASE.bot.name} (${BASE.brand.name})</strong></span>
+                <span>WhatsApp: <strong>${BASE.bot.whatsappNumberDisplay}</strong></span>
                 <button type="button" class="footer__link-btn" data-open-whatsapp>Chatear con Max en WhatsApp ›</button>
-              </div>
-              <div>
-                <h4>Pago Móvil Venezuela</h4>
-                <span>${BASE.payment.bankName} (${BASE.payment.bankCode})</span>
-                <span>C.I.: ${BASE.payment.cedulaFormatted}</span>
-                <span>Teléfono Pagos: ${BASE.payment.phoneFormatted}</span>
-                <button type="button" class="footer__link-btn" data-open-payment="pro">Abrir Pasarela de Pago ›</button>
+                <a href="login.html" style="margin-top:8px;">Iniciar Sesión / Crear Cuenta ›</a>
               </div>
             </div>
           </div>
           <div class="footer__bottom">
-            <p>© <span id="footerYear">${BASE.brand.year}</span> ${BASE.brand.name} Venezuela. Seguridad alineada a ISO/IEC 27001:2022 y OWASP API Top 10.</p>
-            <p>Arquitectura multipágina HTML, CSS y JavaScript conectada a Neon PostgreSQL.</p>
+            <p>© <span id="footerYear">${BASE.brand.year}</span> ${BASE.brand.name} Venezuela. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>
@@ -331,7 +312,8 @@
                     <div class="copy-item copy-item--highlight">
                       <div>
                         <span>Monto a transferir</span>
-                        <strong id="pmAmountSummary">$49 USD · Bs. 2.572,50</strong>
+                        <strong id="pmAmountSummary">$49 USD · Bs. 45.205,44</strong>
+                        <small id="pmRateHint" style="display:block;font-size:0.72rem;color:#b8d7ff;margin-top:2px;">Tasa BCV del día</small>
                       </div>
                       <button type="button" class="copy-btn" id="copyBsAmountBtn">Copiar Bs</button>
                     </div>

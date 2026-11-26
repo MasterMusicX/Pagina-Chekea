@@ -23,7 +23,7 @@
   const STORAGE_KEYS = {
     API_CONFIG: "ckekea_api_config_v3",
     GENERATED_KEYS: "ckekea_generated_keys_v3",
-    EXCHANGE_RATE: "ckekea_exchange_rate_v3",
+    EXCHANGE_RATE: "ckekea_exchange_rate_v4",
     ACTIVE_ACCESS: "ckekea_active_client_access_v3",
     WA_POPUP_SEEN: "ckekea_wa_welcome_seen_v3"
   };
@@ -631,9 +631,35 @@
     const priceUsd = getPlanPriceUsd(plan);
     const summaryEl = document.getElementById("pmAmountSummary");
     const copyBsBtn = document.getElementById("copyBsAmountBtn");
+    const rateHintEl = document.getElementById("pmRateHint");
 
     if (summaryEl) summaryEl.textContent = `$${priceUsd} USD · Bs. ${formatBs(priceUsd)}`;
     if (copyBsBtn) copyBsBtn.dataset.bsPlain = (priceUsd * state.exchangeRateBs).toFixed(2);
+    if (rateHintEl) rateHintEl.textContent = `Tasa BCV: ${formatRate(state.exchangeRateBs)} Bs/USD`;
+  }
+
+  async function fetchLiveBcvRate() {
+    try {
+      const apiOrigin =
+        window.location.protocol === "http:" || window.location.protocol === "https:"
+          ? window.location.origin
+          : (BASE.platform && BASE.platform.apiBaseUrl) || "";
+      if (!apiOrigin) return;
+      const res = await fetch(`${apiOrigin.replace(/\/+$/, "")}/api/rates/bcv`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const liveRate = Number(json && json.rate);
+      if (Number.isFinite(liveRate) && liveRate > 0) {
+        state.exchangeRateBs = liveRate;
+        saveState();
+        const cfgRateEl = document.getElementById("cfgExchangeRate");
+        if (cfgRateEl) cfgRateEl.value = String(Number(liveRate.toFixed(2)));
+        renderPlans();
+        updateCheckoutSummary();
+      }
+    } catch {
+      // Mantiene tasa referencial en memoria si no hay servidor activo.
+    }
   }
 
   // ==========================================================================
@@ -2048,6 +2074,7 @@ console.log(data.response, data.conversation_id);`;
     initChatWelcome();
     bindEvents();
     initScrollReveal();
+    fetchLiveBcvRate();
 
     // Si llegamos a api-studio.html#keys, abrir la pestaña de API Keys automáticamente
     if (currentPage === "api-studio" && window.location.hash === "#keys") {

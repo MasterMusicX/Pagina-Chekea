@@ -57,7 +57,7 @@ window.CHEKEA_CONFIG = {
     // Número principal para contactar al Bot Max por WhatsApp
     whatsappInternational: "584166214410",
     holderName: "José Davalillo",
-    exchangeRateBs: 52.50,
+    exchangeRateBs: 922.56,
     annualDiscountPercent: 20
   },
 
@@ -111,11 +111,11 @@ window.CHEKEA_CONFIG = {
       accent: "blue",
       featured: false,
       features: [
-        "Asistente virtual IA activo 24/7 en WhatsApp (sin depender de personal todo el día)",
+        "Asistente virtual IA activo 24/7 en WhatsApp para atender a tus clientes",
         "Panel web Ckekea App para catálogo, precios, stock y alertas de pedidos en vivo",
-        "Recepción de comprobantes Pago Móvil con alertas instantáneas en pantalla",
+        "Recepción de comprobantes de Pago Móvil con alertas instantáneas en pantalla",
         "Reporte PDF de Cierre Semanal de ventas y movimientos",
-        "1 API Key dedicada (X-API-Key / Bearer) + soporte directo"
+        "1 llave API dedicada + soporte directo"
       ]
     },
     {
@@ -124,7 +124,7 @@ window.CHEKEA_CONFIG = {
       clientBotPlan: "PRO",
       name: "Pro",
       badge: "Más popular",
-      tagline: "Todo el Plan Estándar + API Bancaria en tiempo real anti-fraude.",
+      tagline: "Todo el Plan Estándar + validación bancaria automática anti-fraude.",
       idealFor: "Negocios con alto flujo de Pago Móvil que necesitan cobros seguros y automáticos.",
       priceUsdMonthly: 49,
       apiPrefix: "sk_live_pro_",
@@ -135,10 +135,10 @@ window.CHEKEA_CONFIG = {
       featured: true,
       features: [
         "Todo lo incluido en el Plan Estándar (Bot IA 24/7 + Ckekea App + PDF Semanal)",
-        "Conexión con API Bancaria en tiempo real: valida cada Pago Móvil en segundos",
-        "Erradica capturas falsas editadas y libera a tu equipo de revisar referencias",
-        "Lectura IA de récipes/fotos en Base64 + sincronización de stock (/api/v1/stock/import)",
-        "Hasta 5 API Keys + historial de conversaciones y calificación de respuestas"
+        "Validación automática de Pago Móvil en segundos contra el banco",
+        "Elimina capturas falsas editadas y ahorra tiempo en caja",
+        "Lectura inteligente de fotos de récipes y comprobantes + carga rápida de inventario",
+        "Hasta 5 llaves API + historial de conversaciones con clientes"
       ]
     },
     {
@@ -147,7 +147,7 @@ window.CHEKEA_CONFIG = {
       clientBotPlan: "GOLD",
       name: "Gold",
       badge: "Empresarial",
-      tagline: "Bot IA + API Bancaria + Enlace bidireccional directo a tu ERP.",
+      tagline: "Bot IA + validación bancaria + enlace directo con tu sistema administrativo.",
       idealFor: "Empresas consolidadas y multi-sucursal que operan con Saint, Profit Plus, A2, Valery o Premium Soft.",
       priceUsdMonthly: 119,
       apiPrefix: "sk_live_gld_",
@@ -157,11 +157,11 @@ window.CHEKEA_CONFIG = {
       accent: "gold",
       featured: false,
       features: [
-        "Todo lo del Plan Pro (Bot IA 24/7 + Ckekea App + API Bancaria anti-fraude)",
-        "Integración API REST y Webhooks firmados con Saint, Profit Plus, A2, Valery y Premium Soft",
+        "Todo lo del Plan Pro (Bot IA 24/7 + Ckekea App + validación bancaria anti-fraude)",
+        "Conexión directa con Saint, Profit Plus, A2, Valery y Premium Soft",
         "Sincronización automática de inventario multi-sucursal, precios y facturación",
-        "Cierre semanal PDF enviado automáticamente al WhatsApp del dueño",
-        "API Keys ilimitadas + consultoría técnica directa con ingeniería"
+        "Cierre semanal en PDF enviado automáticamente al WhatsApp del dueño",
+        "Llaves API ilimitadas + acompañamiento técnico personalizado"
       ]
     }
   ],

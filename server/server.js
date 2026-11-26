@@ -50,6 +50,87 @@ const OPENROUTER_API_KEY = (process.env.OPENROUTER_API_KEY || "").trim();
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
 const OPENROUTER_API_URL = process.env.OPENROUTER_API_URL || "https://openrouter.ai/api/v1/chat/completions";
 
+const COTIZAVE_API_KEY = (process.env.COTIZAVE_API_KEY || "").trim();
+const COTIZAVE_API_URL = (process.env.COTIZAVE_API_URL || "https://api.cotizave.com/v2/fx/VE/rates/ve-bcv").trim();
+const COTIZAVE_CACHE_TTL_MS = Math.max(60000, Number(process.env.COTIZAVE_CACHE_TTL_MS || 3600000));
+const DEFAULT_BCV_FALLBACK = Number(process.env.DEFAULT_BCV_RATE || 922.56);
+
+const bcvRateCache = {
+  rate: DEFAULT_BCV_FALLBACK,
+  effectiveDate: null,
+  updatedAt: null,
+  source: "BCV (referencial)",
+  fetchedAt: 0
+};
+
+async function getLiveBcvRate(forceRefresh) {
+  const now = Date.now();
+  if (!forceRefresh && bcvRateCache.fetchedAt > 0 && now - bcvRateCache.fetchedAt < COTIZAVE_CACHE_TTL_MS) {
+    return {
+      rate: bcvRateCache.rate,
+      effectiveDate: bcvRateCache.effectiveDate,
+      updatedAt: bcvRateCache.updatedAt,
+      source: bcvRateCache.source,
+      cached: true
+    };
+  }
+
+  if (!COTIZAVE_API_KEY) {
+    return {
+      rate: bcvRateCache.rate,
+      effectiveDate: bcvRateCache.effectiveDate,
+      updatedAt: bcvRateCache.updatedAt,
+      source: "BCV (referencial)",
+      cached: false
+    };
+  }
+
+  try {
+    const res = await fetch(COTIZAVE_API_URL, {
+      method: "GET",
+      headers: {
+        "X-API-Key": COTIZAVE_API_KEY,
+        Accept: "application/json"
+      },
+      timeout: 8000
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const json = await res.json();
+    const rawRate = Number(
+      json.mid ||
+        json.rate ||
+        json.price ||
+        (json.data && (json.data.mid || json.data.rate))
+    );
+    if (Number.isFinite(rawRate) && rawRate > 0) {
+      bcvRateCache.rate = Number(rawRate.toFixed(4));
+      bcvRateCache.effectiveDate = json.effective_date || null;
+      bcvRateCache.updatedAt = json.updated_at || json.fetched_at || new Date().toISOString();
+      bcvRateCache.source = "BCV Oficial · Cotizave";
+      bcvRateCache.fetchedAt = now;
+      return {
+        rate: bcvRateCache.rate,
+        effectiveDate: bcvRateCache.effectiveDate,
+        updatedAt: bcvRateCache.updatedAt,
+        source: bcvRateCache.source,
+        cached: false
+      };
+    }
+    throw new Error("Formato de tasa inválido");
+  } catch (err) {
+    console.warn("[BCV] No se pudo actualizar desde Cotizave (usando respaldo):", err.message);
+    return {
+      rate: bcvRateCache.rate,
+      effectiveDate: bcvRateCache.effectiveDate,
+      updatedAt: bcvRateCache.updatedAt,
+      source: bcvRateCache.fetchedAt > 0 ? bcvRateCache.source : "BCV (referencial)",
+      cached: bcvRateCache.fetchedAt > 0
+    };
+  }
+}
+
 const INITIAL_SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || "josemigueldav05@gmail.com").trim().toLowerCase();
 const INITIAL_SUPERADMIN_PASS = process.env.SUPERADMIN_PASSWORD || "Zangetsu1531.";
 
@@ -690,6 +771,23 @@ app.get("/api/health", async (_req, res) => {
 });
 
 app.get("/health", (_req, res) => res.redirect("/api/health"));
+
+// ============================================================================
+// TASA OFICIAL DEL DÓLAR BCV EN TIEMPO REAL (COTIZAVE CON CACHÉ DE 1 HORA)
+// ============================================================================
+app.get("/api/rates/bcv", async (_req, res) => {
+  const data = await getLiveBcvRate(false);
+  res.json({
+    success: true,
+    currency: "VES",
+    base: "USD",
+    rate: data.rate,
+    effectiveDate: data.effectiveDate,
+    updatedAt: data.updatedAt,
+    source: data.source,
+    cached: data.cached
+  });
+});
 
 // ============================================================================
 // 1. AUTENTICACIÓN: REGISTRO, LOGIN, PERFIL Y CAMBIO DE CONTRASEÑA
