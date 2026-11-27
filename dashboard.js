@@ -479,7 +479,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "plantilla-inventario-ckekea.csv";
+      a.download = "plantilla-inventario-sinkroo.csv";
       a.click();
       URL.revokeObjectURL(url);
       toast("Plantilla CSV descargada");

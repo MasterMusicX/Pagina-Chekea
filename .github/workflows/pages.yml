@@ -1,4 +1,4 @@
-name: Deploy Ckekea Static Site to GitHub Pages
+name: Deploy SINKR∞ Static Site to GitHub Pages
 
 on:
   push:

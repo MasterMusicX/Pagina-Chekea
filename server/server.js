@@ -62,6 +62,7 @@ const bcvRateCache = {
   source: "BCV (referencial)",
   fetchedAt: 0
 };
+let bcvInFlightPromise = null;
 
 async function getLiveBcvRate(forceRefresh) {
   const now = Date.now();
@@ -85,50 +86,60 @@ async function getLiveBcvRate(forceRefresh) {
     };
   }
 
-  try {
-    const res = await fetch(COTIZAVE_API_URL, {
-      method: "GET",
-      headers: {
-        "X-API-Key": COTIZAVE_API_KEY,
-        Accept: "application/json"
-      },
-      timeout: 8000
-    });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
-    const json = await res.json();
-    const rawRate = Number(
-      json.mid ||
-        json.rate ||
-        json.price ||
-        (json.data && (json.data.mid || json.data.rate))
-    );
-    if (Number.isFinite(rawRate) && rawRate > 0) {
-      bcvRateCache.rate = Number(rawRate.toFixed(4));
-      bcvRateCache.effectiveDate = json.effective_date || null;
-      bcvRateCache.updatedAt = json.updated_at || json.fetched_at || new Date().toISOString();
-      bcvRateCache.source = "BCV Oficial · Cotizave";
-      bcvRateCache.fetchedAt = now;
+  if (bcvInFlightPromise) {
+    return bcvInFlightPromise;
+  }
+
+  bcvInFlightPromise = (async () => {
+    try {
+      const res = await fetch(COTIZAVE_API_URL, {
+        method: "GET",
+        headers: {
+          "X-API-Key": COTIZAVE_API_KEY,
+          Accept: "application/json"
+        },
+        timeout: 12000
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      const rawRate = Number(
+        json.mid ||
+          json.rate ||
+          json.price ||
+          (json.data && (json.data.mid || json.data.rate))
+      );
+      if (Number.isFinite(rawRate) && rawRate > 0) {
+        bcvRateCache.rate = Number(rawRate.toFixed(4));
+        bcvRateCache.effectiveDate = json.effective_date || null;
+        bcvRateCache.updatedAt = json.updated_at || json.fetched_at || new Date().toISOString();
+        bcvRateCache.source = "BCV Oficial · Cotizave";
+        bcvRateCache.fetchedAt = Date.now();
+        return {
+          rate: bcvRateCache.rate,
+          effectiveDate: bcvRateCache.effectiveDate,
+          updatedAt: bcvRateCache.updatedAt,
+          source: bcvRateCache.source,
+          cached: false
+        };
+      }
+      throw new Error("Formato de tasa inválido");
+    } catch (err) {
+      console.warn("[BCV] No se pudo actualizar desde Cotizave (usando respaldo):", err.message);
       return {
         rate: bcvRateCache.rate,
         effectiveDate: bcvRateCache.effectiveDate,
         updatedAt: bcvRateCache.updatedAt,
-        source: bcvRateCache.source,
-        cached: false
+        source: bcvRateCache.fetchedAt > 0 ? bcvRateCache.source : "BCV (referencial)",
+        cached: bcvRateCache.fetchedAt > 0
       };
+    } finally {
+      bcvInFlightPromise = null;
     }
-    throw new Error("Formato de tasa inválido");
-  } catch (err) {
-    console.warn("[BCV] No se pudo actualizar desde Cotizave (usando respaldo):", err.message);
-    return {
-      rate: bcvRateCache.rate,
-      effectiveDate: bcvRateCache.effectiveDate,
-      updatedAt: bcvRateCache.updatedAt,
-      source: bcvRateCache.fetchedAt > 0 ? bcvRateCache.source : "BCV (referencial)",
-      cached: bcvRateCache.fetchedAt > 0
-    };
-  }
+  })();
+
+  return bcvInFlightPromise;
 }
 
 const INITIAL_SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || "josemigueldav05@gmail.com").trim().toLowerCase();
@@ -477,7 +488,7 @@ async function ensureSchemaAndSeed() {
       await db.query("BEGIN");
       await createAccountInDb(db, {
         fullName: "José Davalillo",
-        businessName: "Ckekea HQ",
+        businessName: "SINKR∞ HQ",
         businessType: "TECH",
         email: INITIAL_SUPERADMIN_EMAIL,
         phone: "584246003606",
@@ -559,7 +570,7 @@ async function generateInventoryBotReply(clientRow, message, endpointLabel) {
 
   if (OPENROUTER_API_KEY) {
     const systemPrompt = [
-      `Eres ${clientRow.bot_name || "Max"}, asesor humano de ventas de "${clientRow.business_name || "Ckekea"}" (${clientRow.business_type || "RETAIL"}) atendiendo por WhatsApp.`,
+      `Eres ${clientRow.bot_name || "Max"}, asesor humano de ventas de "${clientRow.business_name || "SINKR∞"}" (${clientRow.business_type || "RETAIL"}) atendiendo por WhatsApp.`,
       `Horario: ${clientRow.business_hours || "Lunes a Sábado 8am - 7pm"}. Envíos: ${clientRow.delivery_info || "Sí, hacemos envíos y entregas en tienda."}.`,
       `REGLAS: Responde corto, humano y directo (máximo 4 líneas). Usa ÚNICAMENTE los productos y precios reales del inventario abajo. No inventes precios ni productos.`,
       ``,
@@ -572,7 +583,7 @@ async function generateInventoryBotReply(clientRow, message, endpointLabel) {
       headers: {
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
-        "X-Title": `Ckekea-${clientRow.business_name || "Bot"}`
+        "X-Title": `SINKROO-${clientRow.business_name || "Bot"}`
       },
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
@@ -606,7 +617,7 @@ async function generateInventoryBotReply(clientRow, message, endpointLabel) {
   recordUsage(tenantId, "CHATBOT_MSG", endpointLabel || "/api/bot/chat", 0, Date.now() - started);
   if (!invRes.rows.length) {
     return {
-      reply: `Hola. Soy ${clientRow.bot_name || "Max"} de ${clientRow.business_name || "Ckekea"}. Aún no hay productos cargados en el inventario; sube tu CSV o agrega artículos desde el Dashboard para que los asimile al instante.`,
+      reply: `Hola. Soy ${clientRow.bot_name || "Max"} de ${clientRow.business_name || "SINKR∞"}. Aún no hay productos cargados en el inventario; sube tu CSV o agrega artículos desde el Dashboard para que los asimile al instante.`,
       source: "Neon Catalog Engine"
     };
   }
@@ -1744,6 +1755,9 @@ app.use(express.static(STATIC_ROOT));
 // ============================================================================
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`[Server] Ckekea Standalone escuchando en http://0.0.0.0:${PORT} (env.PORT=${process.env.PORT || "default:3000"})`);
+
+  // Pre-cargar tasa oficial BCV desde Cotizave en segundo plano
+  getLiveBcvRate(false).catch(() => {});
 
   ensureSchemaAndSeed()
     .then(() => {

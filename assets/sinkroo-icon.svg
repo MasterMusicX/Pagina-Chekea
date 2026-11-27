@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 156" fill="none" role="img" aria-label="SINKR∞ Icon">
+  <defs>
+    <linearGradient id="skOuterGrad" x1="16" y1="128" x2="164" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0A54C4"/>
+      <stop offset="45%" stop-color="#0E95E8"/>
+      <stop offset="82%" stop-color="#2AD8C6"/>
+      <stop offset="100%" stop-color="#6BF4C7"/>
+    </linearGradient>
+    <linearGradient id="skRingGrad" x1="28" y1="120" x2="152" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1972E6"/>
+      <stop offset="55%" stop-color="#22B8E2"/>
+      <stop offset="100%" stop-color="#76F7CA"/>
+    </linearGradient>
+    <linearGradient id="skScreenGrad" x1="36" y1="28" x2="144" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06224C"/>
+      <stop offset="55%" stop-color="#093166"/>
+      <stop offset="100%" stop-color="#041939"/>
+    </linearGradient>
+    <linearGradient id="skCheckGrad" x1="52" y1="90" x2="132" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2AC7E8"/>
+      <stop offset="52%" stop-color="#3FE4C7"/>
+      <stop offset="100%" stop-color="#7DF9CB"/>
+    </linearGradient>
+    <linearGradient id="skEarL" x1="8" y1="48" x2="26" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1A86E8"/>
+      <stop offset="100%" stop-color="#0A50BE"/>
+    </linearGradient>
+    <linearGradient id="skEarR" x1="154" y1="48" x2="172" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38D8CE"/>
+      <stop offset="100%" stop-color="#1176D8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Left & Right Robot Earpieces -->
+  <path d="M24 51C14.5 51 9 58 9 67V76C9 85 14.5 92 24 92H30V51H24Z" fill="url(#skEarL)"/>
+  <path d="M18 57C14.5 58 13 62 13 67V75C13 80 14.5 84 18 85" stroke="#62D8FF" stroke-width="2" stroke-linecap="round" opacity="0.65"/>
+  <path d="M156 51C165.5 51 171 58 171 67V76C171 85 165.5 92 156 92H150V51H156Z" fill="url(#skEarR)"/>
+  <path d="M162 57C165.5 58 167 62 167 67V75C167 80 165.5 84 162 85" stroke="#92FDE0" stroke-width="2" stroke-linecap="round" opacity="0.65"/>
+
+  <!-- Outer Speech Bubble Frame -->
+  <path d="M72 14H108C138.9 14 162 37.1 162 68V73C162 103.9 138.9 127 108 127H86.5L59.5 147.5C56.2 150 51.5 147.6 51.5 143.4V124.2C32 117.1 18 97.6 18 73V68C18 37.1 41.1 14 72 14Z" fill="url(#skOuterGrad)"/>
+
+  <!-- Inner Bevel Highlight -->
+  <path d="M72 21H108C135 21 155 41 155 68V73C155 100 135 120 108 120H84L60 138V118.5C40.5 113 25 95.5 25 73V68C25 41 45 21 72 21Z" fill="url(#skRingGrad)" opacity="0.55"/>
+
+  <!-- Dark Navy Visor Screen -->
+  <rect x="33" y="29" width="114" height="83" rx="41.5" fill="url(#skScreenGrad)" stroke="#48E6D6" stroke-opacity="0.45" stroke-width="2.2"/>
+
+  <!-- Subtle Circuit Traces inside Visor -->
+  <g stroke="#2AD8D2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72">
+    <!-- Top-left circuit -->
+    <path d="M44 71V60L55 48H68"/>
+    <circle cx="44" cy="71" r="3" fill="#06224C"/>
+    <circle cx="71" cy="48" r="3" fill="#06224C"/>
+    <path d="M51 66L58 59H64"/>
+    <circle cx="66.5" cy="59" r="2.6" fill="#06224C"/>
+
+    <!-- Top-right circuit -->
+    <path d="M101 44H120L128 36"/>
+    <circle cx="98" cy="44" r="3" fill="#06224C"/>
+
+    <!-- Bottom-left circuit -->
+    <path d="M49 102L58 93H72"/>
+    <circle cx="75" cy="93" r="3" fill="#06224C"/>
+
+    <!-- Bottom-right circuit -->
+    <path d="M104 97H122L134 85V75"/>
+    <circle cx="101" cy="97" r="3" fill="#06224C"/>
+    <circle cx="134" cy="72" r="3" fill="#06224C"/>
+    <path d="M111 89H120L126 83"/>
+    <circle cx="108.5" cy="89" r="2.6" fill="#06224C"/>
+  </g>
+
+  <!-- Double Checkmarks (Verification Emblem) -->
+  <path d="M55 71.5L68 84.5L92.5 57.5" stroke="url(#skCheckGrad)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M90.5 71.5L103.5 84.5L128 57.5" stroke="url(#skCheckGrad)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Top Gloss Reflection -->
+  <path d="M62 20.5H109C126 20.5 140 28 147.5 40" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -406,7 +406,7 @@
           method: "POST",
           body: JSON.stringify({
             fullName: document.getElementById("admSuperName").value.trim(),
-            businessName: document.getElementById("admSuperBusiness").value.trim() || "Ckekea Admin",
+            businessName: document.getElementById("admSuperBusiness").value.trim() || "SINKR∞ Admin",
             email: document.getElementById("admSuperEmail").value.trim(),
             phone: document.getElementById("admSuperPhone").value.trim(),
             role: "SUPERADMIN",
@@ -418,7 +418,7 @@
           })
         });
         e.target.reset();
-        document.getElementById("admSuperBusiness").value = "Ckekea Admin";
+        document.getElementById("admSuperBusiness").value = "SINKR∞ Admin";
         toast("Superusuario creado con privilegios totales en Neon DB");
         await loadOverview();
       } catch (err) {
@@ -583,7 +583,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `ckekea-consumo-empresas-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `sinkroo-consumo-empresas-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       toast("Reporte CSV de consumo descargado");

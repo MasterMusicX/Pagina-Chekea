@@ -491,7 +491,7 @@
     const a = state.activeAccess;
     if (!a) return;
     const envText = [
-      `# Configuración generada desde Ckekea para ${a.customerName}`,
+      `# Configuración generada desde SINKR∞ para ${a.customerName}`,
       `BOT_NAME="${BASE.bot.name}"`,
       `COMPANY_NAME="${BASE.brand.name}"`,
       `WHATSAPP_ENABLED=true`,
@@ -527,7 +527,7 @@
       const res = await fetch(url, { headers: buildBotPanelHeaders() });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
-      downloadFile(`cierre-semanal-ckekea-${new Date().toISOString().slice(0, 10)}.pdf`, blob, "application/pdf");
+      downloadFile(`cierre-semanal-sinkroo-${new Date().toISOString().slice(0, 10)}.pdf`, blob, "application/pdf");
       showToast("PDF de Cierre Semanal descargado");
     } catch (err) {
       showToast(`Inicia client-sales-bot.ts en ${state.apiConfig.clientBotBaseUrl} para descargar el PDF (${err.message})`);
@@ -599,8 +599,17 @@
       .join("");
 
     const waBtn = document.getElementById("founderWhatsappBtn");
-    waBtn.href = buildWhatsAppUrl(founder.whatsappText, BASE.bot.whatsappNumberRaw);
-    waBtn.textContent = `Escribir a Max / Equipo (${BASE.bot.whatsappNumberDisplay})`;
+    const targetPhoneRaw = founder.whatsappRaw || BASE.bot.whatsappNumberRaw;
+    const targetPhoneDisplay = founder.whatsappDisplay || BASE.bot.whatsappNumberDisplay;
+    const isEn = window.SINKROO_I18N && window.SINKROO_I18N.getLang() === "en";
+    waBtn.href = buildWhatsAppUrl(founder.whatsappText, targetPhoneRaw);
+    waBtn.textContent = founder.whatsappDisplay
+      ? isEn
+        ? `Contact ${founder.name} on WhatsApp (${targetPhoneDisplay})`
+        : `Contactar a ${founder.name} por WhatsApp (${targetPhoneDisplay})`
+      : isEn
+        ? `Message Max / Team (${targetPhoneDisplay})`
+        : `Escribir a Max / Equipo (${targetPhoneDisplay})`;
 
     openModal("founderModal");
   }
@@ -816,7 +825,7 @@
     document.getElementById("freshWebhookStatus").textContent = webhookNote;
 
     const receiptWaMessage =
-      `Hola Max / equipo Ckekea, acabo de pagar mi Plan ${plan.name} por Pago Móvil Mercantil.\n` +
+      `Hola Max / equipo SINKR∞, acabo de pagar mi Plan ${plan.name} por Pago Móvil Mercantil.\n` +
       `• Negocio/Cliente: ${customerName}\n` +
       `• Rubro: ${businessType}\n` +
       `• Monto: $${amountUsd} USD (Bs. ${formatBs(amountUsd)})\n` +
@@ -868,7 +877,7 @@
     const listEl = document.getElementById("loadedSpecEndpoints");
 
     if (titleEl) titleEl.textContent = (spec.info && spec.info.title) || "API Personalizada";
-    if (fileEl) fileEl.textContent = state.apiConfig.uploadedSpecName || "ckekea-chatbot-apirest-v2.json";
+    if (fileEl) fileEl.textContent = state.apiConfig.uploadedSpecName || "sinkroo-chatbot-apirest-v2.json";
     if (descEl) descEl.textContent = (spec.info && spec.info.description) || "Especificación cargada desde JSON.";
     if (!listEl) return;
 
@@ -980,7 +989,7 @@
       state.lastGeneratedKey ||
       (state.generatedKeys[0] && state.generatedKeys[0].apiKey) ||
       "sk_live_tu_api_key_generada";
-    const customerName = (state.activeAccess && state.activeAccess.customerName) || "Cliente Ckekea";
+    const customerName = (state.activeAccess && state.activeAccess.customerName) || "Cliente SINKR∞";
     const customerPhone = (state.activeAccess && state.activeAccess.customerPhone) || BASE.bot.whatsappNumberRaw;
 
     if (curlEl) {
@@ -998,7 +1007,7 @@ curl -X POST "${endpoint}" \\
 
     if (jsEl) {
       jsEl.textContent =
-`// Consumir Max / Ckekea API (standalone-chatbot-api.ts)
+`// Consumir Max / SINKR∞ API (standalone-chatbot-api.ts)
 const res = await fetch("${endpoint}", {
   method: "POST",
   headers: {
@@ -1023,7 +1032,7 @@ console.log(data.response, data.conversation_id);`;
     updatedConfig.apiStudio = state.apiConfig;
 
     const content =
-      `// Archivo generado desde Ckekea API Studio (${new Date().toLocaleString("es-VE")})\n` +
+      `// Archivo generado desde SINKR∞ API Studio (${new Date().toLocaleString("es-VE")})\n` +
       `// Reemplaza tu config.js en la carpeta del proyecto para guardar estos cambios.\n\n` +
       `window.CHEKEA_CONFIG = ${JSON.stringify(updatedConfig, null, 2)};\n`;
 
@@ -1068,20 +1077,20 @@ console.log(data.response, data.conversation_id);`;
           ``,
           `¿Qué deseas revisar ahora?`
         ].join("\n"),
-        sourceLabel: "Max · Ckekea"
+        sourceLabel: "Max · SINKR∞"
       };
     }
 
     if (/^(menu|inicio|hola|buenas|ayuda)$/.test(q)) {
       ms.step = "MAIN_MENU";
-      return { text: getMaxWelcomeText(), sourceLabel: "Max · Ckekea" };
+      return { text: getMaxWelcomeText(), sourceLabel: "Max · SINKR∞" };
     }
 
     if (q.includes("whatsapp") || q.includes("416") || q.includes("asesor") || q.includes("humano")) {
       return {
-        text: `Perfecto, *${firstName}*. Puedes continuar esta misma conversación directo con *Max* en WhatsApp al *${BASE.bot.whatsappNumberDisplay}* (sesión *${BASE.bot.whatsappSessionPath}*).`,
+        text: `Perfecto, *${firstName}*. Puedes continuar esta misma conversación directo con *Max* en WhatsApp al *${BASE.bot.whatsappNumberDisplay}*.`,
         actionType: "whatsapp",
-        waMessage: `Hola Max de Ckekea, vengo desde la web (${firstName}) y quiero continuar por WhatsApp.`,
+        waMessage: `Hola Max de SINKR∞, vengo desde la web (${firstName}) y quiero continuar por WhatsApp.`,
         sourceLabel: "Max · WhatsApp"
       };
     }
@@ -1132,7 +1141,7 @@ console.log(data.response, data.conversation_id);`;
         };
       }
       ms.step = "MAIN_MENU";
-      return { text: `Sin problema, reinicié la demo. ¿Probamos otra opción (1, 2, 3 o 4)?`, sourceLabel: "Max · Ckekea" };
+      return { text: `Sin problema, reinicié la demo. ¿Probamos otra opción (1, 2, 3 o 4)?`, sourceLabel: "Max · SINKR∞" };
     }
 
     if (ms.step === "DEMO_PAYMENT") {
@@ -1173,24 +1182,24 @@ console.log(data.response, data.conversation_id);`;
       ms.step = "MAIN_MENU";
       const combined = normalizeText(`${ms.diagnosis.business} ${ms.diagnosis.volume} ${rawInput}`);
       let recPlan = "Pro";
-      let recReason = "incluye Bot IA 24/7, Ckekea App y *API Bancaria en tiempo real* para validar cada Pago Móvil sin capturas falsas.";
+      let recReason = "incluye Bot IA 24/7, SINKR∞ App y *API Bancaria en tiempo real* para validar cada Pago Móvil sin capturas falsas.";
       if (/(saint|profit|a2|valery|premium|erp|sucursal|cadena|100|mas de 80)/.test(combined)) {
         recPlan = "Gold";
         recReason = "conecta el Bot IA y la API Bancaria directo con tu *ERP* vía API REST y Webhooks firmados multi-sucursal.";
       } else if (/(empezando|pequeno|menos de 20|pocos|emprendimiento)/.test(combined)) {
         recPlan = "Estándar";
-        recReason = "te da Bot IA 24/7 en WhatsApp + *Ckekea App* para catálogo, pedidos y alertas sin complicaciones.";
+        recReason = "te da Bot IA 24/7 en WhatsApp + *SINKR∞ App* para catálogo, pedidos y alertas sin complicaciones.";
       }
 
       return {
         text: [
-          `*Diagnóstico Ckekea para ${ms.diagnosis.business}:*`,
+          `*Diagnóstico SINKR∞ para ${ms.diagnosis.business}:*`,
           `Te recomiendo el *Plan ${recPlan}*, porque ${recReason}`,
           ``,
           `Puedes activarlo aquí por Pago Móvil Mercantil o escribirme directo por WhatsApp (*${BASE.bot.whatsappNumberDisplay}*).`
         ].join("\n"),
         actionType: "checkout",
-        waMessage: `Hola Max de Ckekea, hice el diagnóstico en la web (${ms.diagnosis.business} / ${ms.diagnosis.volume}) y me recomendaste el Plan ${recPlan}.`,
+        waMessage: `Hola Max de SINKR∞, hice el diagnóstico en la web (${ms.diagnosis.business} / ${ms.diagnosis.volume}) y me recomendaste el Plan ${recPlan}.`,
         sourceLabel: `Max · Recomienda ${recPlan}`
       };
     }
@@ -1300,14 +1309,14 @@ console.log(data.response, data.conversation_id);`;
           `• *José Davalillo* — Ingeniero y Desarrollador de Software`,
           `Puedes ver sus perfiles detallados en la página *Fundadores*.`
         ].join("\n"),
-        sourceLabel: "Max · Ckekea"
+        sourceLabel: "Max · SINKR∞"
       };
     }
 
     return {
       text: `Entendido, *${firstName}*. Para ayudarte más rápido, dime un número del menú:\n1. *Planes* · 2. *Demo de venta* · 3. *Seguridad y ERP* · 4. *Diagnóstico rápido*\nO escríbeme directo al WhatsApp *${BASE.bot.whatsappNumberDisplay}*.`,
       actionType: "whatsapp",
-      waMessage: `Hola Max de Ckekea: ${rawInput}`,
+      waMessage: `Hola Max de SINKR∞: ${rawInput}`,
       sourceLabel: "Max · Ckekea"
     };
   }
@@ -1400,7 +1409,7 @@ console.log(data.response, data.conversation_id);`;
     if (engineMode !== "max_local") {
       if (!state.activeAccess || !state.activeAccess.apiKey) {
         return {
-          text: `Para conectar directo a *${engineMode === "client_bot" ? "Bot Comercial (:3001)" : "API SaaS (:3000)"}*, primero paga un plan o ingresa tu API Key. Mientras tanto puedes cambiar el selector a *Max Ckekea (Web)* y conversar conmigo.`,
+          text: `Para conectar directo a *${engineMode === "client_bot" ? "Bot Comercial (:3001)" : "API SaaS (:3000)"}*, primero paga un plan o ingresa tu API Key. Mientras tanto puedes cambiar el selector a *Max SINKR∞ (Web)* y conversar conmigo.`,
           actionType: "checkout",
           sourceLabel: "Acceso Requerido"
         };
@@ -1530,8 +1539,8 @@ console.log(data.response, data.conversation_id);`;
     if (emb) emb.innerHTML = "";
     if (flt) flt.innerHTML = "";
     const welcome = getMaxWelcomeText();
-    appendChatMessage("embeddedChatMessages", welcome, "bot", { sourceLabel: "Max · Ckekea" });
-    appendChatMessage("floatingChatMessages", welcome, "bot", { sourceLabel: "Max · Ckekea" });
+    appendChatMessage("embeddedChatMessages", welcome, "bot", { sourceLabel: "Max · SINKR∞" });
+    appendChatMessage("floatingChatMessages", welcome, "bot", { sourceLabel: "Max · SINKR∞" });
   }
 
   // ==========================================================================
@@ -1681,7 +1690,7 @@ console.log(data.response, data.conversation_id);`;
           ? "Motor cambiado a Bot Comercial (:3001)"
           : val === "standalone_api"
             ? "Motor cambiado a API SaaS (:3000)"
-            : "Motor cambiado a Max Ckekea (Web)";
+            : "Motor cambiado a Max SINKR∞ (Web)";
       showToast(msg);
     });
 
@@ -1950,7 +1959,7 @@ console.log(data.response, data.conversation_id);`;
         id: `tx_${Date.now()}`,
         tenantId: `tenant_${Date.now().toString(36)}`,
         customerName: "Cliente Demo",
-        customerEmail: "demo@ckekea.io",
+        customerEmail: "demo@sinkroo.io",
         customerPhone: BASE.bot.whatsappNumberRaw,
         businessType: "RETAIL",
         originBank: "Mercantil (0105)",
@@ -1973,7 +1982,7 @@ console.log(data.response, data.conversation_id);`;
     });
 
     onId("exportKeysJsonBtn", "click", () => {
-      downloadFile("ckekea-api-keys.json", JSON.stringify(state.generatedKeys, null, 2), "application/json");
+      downloadFile("sinkroo-api-keys.json", JSON.stringify(state.generatedKeys, null, 2), "application/json");
       showToast("Registro de API Keys exportado en JSON");
     });
 
@@ -2066,6 +2075,36 @@ console.log(data.response, data.conversation_id);`;
     if (heroImg && BASE.media.heroShowcase) heroImg.src = BASE.media.heroShowcase;
     if (aiImg && BASE.media.aiArchitecture) aiImg.src = BASE.media.aiArchitecture;
 
+    // Controles del video Hero en index.html
+    const heroVideo = document.getElementById("heroVideo");
+    const heroPlayBtn = document.getElementById("heroVideoPlayBtn");
+    const heroMuteBtn = document.getElementById("heroVideoMuteBtn");
+    if (heroVideo) {
+      if (heroPlayBtn) {
+        heroPlayBtn.addEventListener("click", () => {
+          const isEn = window.SINKROO_I18N && window.SINKROO_I18N.getLang() === "en";
+          if (heroVideo.paused) {
+            heroVideo.play().catch(() => {});
+            heroPlayBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg><span>${isEn ? "Pause" : "Pausar"}</span>`;
+          } else {
+            heroVideo.pause();
+            heroPlayBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg><span>${isEn ? "Play" : "Reproducir"}</span>`;
+          }
+        });
+      }
+      if (heroMuteBtn) {
+        heroMuteBtn.addEventListener("click", () => {
+          const isEn = window.SINKROO_I18N && window.SINKROO_I18N.getLang() === "en";
+          heroVideo.muted = !heroVideo.muted;
+          if (heroVideo.muted) {
+            heroMuteBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg><span>${isEn ? "Sound" : "Sonido"}</span>`;
+          } else {
+            heroMuteBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg><span>${isEn ? "Mute" : "Silenciar"}</span>`;
+          }
+        });
+      }
+    }
+
     renderSecurityGrid();
     renderPlans();
     renderFounders();
@@ -2075,6 +2114,12 @@ console.log(data.response, data.conversation_id);`;
     bindEvents();
     initScrollReveal();
     fetchLiveBcvRate();
+
+    window.addEventListener("sinkroo:langchange", () => {
+      renderPlans();
+      updateCheckoutSummary();
+      if (window.SINKROO_I18N) window.SINKROO_I18N.applyLanguage();
+    });
 
     // Si llegamos a api-studio.html#keys, abrir la pestaña de API Keys automáticamente
     if (currentPage === "api-studio" && window.location.hash === "#keys") {

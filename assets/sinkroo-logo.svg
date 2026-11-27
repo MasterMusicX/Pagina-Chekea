@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 156" fill="none" role="img" aria-label="SINKR∞ — Automatización y Verificación al Momento">
+  <defs>
+    <linearGradient id="slOuterGrad" x1="16" y1="128" x2="164" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0A54C4"/>
+      <stop offset="45%" stop-color="#0E95E8"/>
+      <stop offset="82%" stop-color="#2AD8C6"/>
+      <stop offset="100%" stop-color="#6BF4C7"/>
+    </linearGradient>
+    <linearGradient id="slRingGrad" x1="28" y1="120" x2="152" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1972E6"/>
+      <stop offset="55%" stop-color="#22B8E2"/>
+      <stop offset="100%" stop-color="#76F7CA"/>
+    </linearGradient>
+    <linearGradient id="slScreenGrad" x1="36" y1="28" x2="144" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06224C"/>
+      <stop offset="55%" stop-color="#093166"/>
+      <stop offset="100%" stop-color="#041939"/>
+    </linearGradient>
+    <linearGradient id="slCheckGrad" x1="52" y1="90" x2="132" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2AC7E8"/>
+      <stop offset="52%" stop-color="#3FE4C7"/>
+      <stop offset="100%" stop-color="#7DF9CB"/>
+    </linearGradient>
+    <linearGradient id="slEarL" x1="8" y1="48" x2="26" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1A86E8"/>
+      <stop offset="100%" stop-color="#0A50BE"/>
+    </linearGradient>
+    <linearGradient id="slEarR" x1="154" y1="48" x2="172" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38D8CE"/>
+      <stop offset="100%" stop-color="#1176D8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Left Emblem -->
+  <g transform="translate(2, 4) scale(0.94)">
+    <path d="M24 51C14.5 51 9 58 9 67V76C9 85 14.5 92 24 92H30V51H24Z" fill="url(#slEarL)"/>
+    <path d="M156 51C165.5 51 171 58 171 67V76C171 85 165.5 92 156 92H150V51H156Z" fill="url(#slEarR)"/>
+    <path d="M72 14H108C138.9 14 162 37.1 162 68V73C162 103.9 138.9 127 108 127H86.5L59.5 147.5C56.2 150 51.5 147.6 51.5 143.4V124.2C32 117.1 18 97.6 18 73V68C18 37.1 41.1 14 72 14Z" fill="url(#slOuterGrad)"/>
+    <path d="M72 21H108C135 21 155 41 155 68V73C155 100 135 120 108 120H84L60 138V118.5C40.5 113 25 95.5 25 73V68C25 41 45 21 72 21Z" fill="url(#slRingGrad)" opacity="0.55"/>
+    <rect x="33" y="29" width="114" height="83" rx="41.5" fill="url(#slScreenGrad)" stroke="#48E6D6" stroke-opacity="0.45" stroke-width="2.2"/>
+    <g stroke="#2AD8D2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.72">
+      <path d="M44 71V60L55 48H68"/>
+      <circle cx="44" cy="71" r="3" fill="#06224C"/>
+      <circle cx="71" cy="48" r="3" fill="#06224C"/>
+      <path d="M101 44H120L128 36"/>
+      <circle cx="98" cy="44" r="3" fill="#06224C"/>
+      <path d="M49 102L58 93H72"/>
+      <circle cx="75" cy="93" r="3" fill="#06224C"/>
+      <path d="M104 97H122L134 85V75"/>
+      <circle cx="101" cy="97" r="3" fill="#06224C"/>
+      <circle cx="134" cy="72" r="3" fill="#06224C"/>
+    </g>
+    <path d="M55 71.5L68 84.5L92.5 57.5" stroke="url(#slCheckGrad)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M90.5 71.5L103.5 84.5L128 57.5" stroke="url(#slCheckGrad)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M62 20.5H109C126 20.5 140 28 147.5 40" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Wordmark: S i(bot) N K R ∞ (Navy for light backgrounds) -->
+  <g fill="#123663">
+    <!-- S -->
+    <text x="190" y="99" font-family="'Inter', 'Montserrat', system-ui, sans-serif" font-size="82" font-weight="800" letter-spacing="-2">S</text>
+
+    <!-- Stem of i -->
+    <rect x="252" y="55" width="14.5" height="44" rx="2.5"/>
+
+    <!-- Mini Robot Head Dot over the i -->
+    <g transform="translate(245, 22)">
+      <line x1="7" y1="8" x2="3.5" y2="2.5" stroke="#123663" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="3" cy="2" r="2.1" fill="#123663"/>
+      <line x1="22" y1="8" x2="25.5" y2="2.5" stroke="#123663" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="26" cy="2" r="2.1" fill="#123663"/>
+      <rect x="2.5" y="7" width="24" height="19" rx="9" fill="#123663"/>
+      <rect x="0" y="13" width="3" height="7" rx="1.5" fill="#123663"/>
+      <rect x="26" y="13" width="3" height="7" rx="1.5" fill="#123663"/>
+      <rect x="6.5" y="11" width="16" height="10.5" rx="5" fill="#FFFFFF"/>
+      <circle cx="11.5" cy="15.8" r="1.7" fill="#123663"/>
+      <circle cx="17.5" cy="15.8" r="1.7" fill="#123663"/>
+      <path d="M12.5 19.2C13.6 20.1 15.4 20.1 16.5 19.2" stroke="#123663" stroke-width="1.3" stroke-linecap="round"/>
+    </g>
+
+    <!-- N K R -->
+    <text x="275" y="99" font-family="'Inter', 'Montserrat', system-ui, sans-serif" font-size="82" font-weight="800" letter-spacing="-1.5">NKR</text>
+
+    <!-- Bold Geometric Infinity Symbol (replacing OO) -->
+    <path d="M477 62C466 62 458 70.5 458 80.5C458 90.5 466 99 477 99C486.5 99 493.5 92.8 501 80.5C508.5 68.2 515.5 62 525 62C536 62 544 70.5 544 80.5C544 90.5 536 99 525 99C515.5 99 508.5 92.8 501 80.5C493.5 68.2 486.5 62 477 62Z" stroke="#123663" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+    <!-- Tagline -->
+    <text x="193" y="128" font-family="'Inter', system-ui, sans-serif" font-size="14.5" font-weight="700" letter-spacing="1.45" fill="#123663">AUTOMATIZACIÓN Y VERIFICACIÓN AL MOMENTO</text>
+  </g>
+</svg>

@@ -144,7 +144,7 @@ class StandaloneWhatsAppBot {
         auth: state,
         logger: pino({ level: "silent" }),
         printQRInTerminal: false,
-        browser: Browsers.macOS("Ckekea Max"),
+        browser: Browsers.macOS("SINKR∞ Max"),
         syncFullHistory: false,
         markOnlineOnConnect: true,
         connectTimeoutMs: 45000,

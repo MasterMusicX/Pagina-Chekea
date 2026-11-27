@@ -53,6 +53,20 @@
       .join("");
   }
 
+  const BRAND_LOCKUP_HTML = `
+    <span class="brand__svg-wrap" aria-hidden="true">
+      <img src="assets/sinkroo-icon.svg" alt="" class="brand__svg-icon" width="32" height="28" />
+    </span>
+    <span class="brand__wordmark" aria-label="SINKR∞">SINKR<span class="brand__inf">∞</span></span>
+  `;
+
+  const LANG_SWITCH_HTML = `
+    <div class="lang-switch" role="group" aria-label="Idioma / Language">
+      <button type="button" class="lang-switch__btn is-active" data-set-lang="es" aria-pressed="true">ES</button>
+      <button type="button" class="lang-switch__btn" data-set-lang="en" aria-pressed="false">EN</button>
+    </div>
+  `;
+
   function injectHeader() {
     const mount = document.getElementById("siteHeader");
     if (!mount) return;
@@ -63,13 +77,7 @@
         <header class="navbar navbar--workspace" id="navbar">
           <div class="container container--workspace navbar__inner">
             <a href="dashboard.html" class="brand" aria-label="${BASE.brand.name} Workspace">
-              <span class="brand__mark" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <rect x="2" y="2" width="20" height="20" rx="6" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
-                  <path d="M8 12.5L10.8 15.3L16.5 9.2" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-              <span class="brand__name">${BASE.brand.name}</span>
+              ${BRAND_LOCKUP_HTML}
               <span class="workspace-tag">${isSuperadmin || currentPage === "admin" ? "Admin" : "Workspace"}</span>
             </a>
 
@@ -78,6 +86,7 @@
             </nav>
 
             <div class="navbar__actions">
+              ${LANG_SWITCH_HTML}
               <button type="button" class="btn btn--ghost btn--sm" id="workspaceNavLogoutBtn">
                 Cerrar sesión
               </button>
@@ -93,6 +102,7 @@
               ${renderNavLinks(PRIVATE_NAV_ITEMS, true)}
             </nav>
             <div class="mobile-menu__actions">
+              <div class="mobile-lang-row">${LANG_SWITCH_HTML}</div>
               <button type="button" class="btn btn--secondary btn--full" id="workspaceMobileLogoutBtn">Cerrar sesión</button>
             </div>
           </div>
@@ -116,13 +126,7 @@
       <header class="navbar" id="navbar">
         <div class="container navbar__inner">
           <a href="index.html" class="brand" aria-label="${BASE.brand.name} Inicio">
-            <span class="brand__mark" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <rect x="2" y="2" width="20" height="20" rx="6" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
-                <path d="M8 12.5L10.8 15.3L16.5 9.2" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-            <span class="brand__name">${BASE.brand.name}</span>
+            ${BRAND_LOCKUP_HTML}
           </a>
 
           <nav class="nav-links" aria-label="Navegación principal">
@@ -130,6 +134,7 @@
           </nav>
 
           <div class="navbar__actions">
+            ${LANG_SWITCH_HTML}
             <a href="login.html" class="btn btn--ghost btn--sm" id="navLoginLink">
               Iniciar Sesión
             </a>
@@ -148,6 +153,7 @@
             ${renderNavLinks(PUBLIC_NAV_ITEMS, true)}
           </nav>
           <div class="mobile-menu__actions">
+            <div class="mobile-lang-row">${LANG_SWITCH_HTML}</div>
             <a href="login.html" class="btn btn--secondary btn--full" id="mobileLoginLink">Iniciar Sesión / Crear Cuenta</a>
             <button type="button" class="btn btn--primary btn--full" data-open-payment="pro">Contratar Plan</button>
           </div>
@@ -179,7 +185,7 @@
         <div class="container">
           <div class="footer__top">
             <div class="footer__brand">
-              <strong>${BASE.brand.name}</strong>
+              <img src="assets/sinkroo-logo.svg" alt="SINKR∞ — Automatización y Verificación al Momento" class="footer__logo-svg" />
               <p>Asistente de ventas con inteligencia artificial en WhatsApp, control de inventario y cobros automáticos para tu negocio.</p>
             </div>
             <div class="footer__cols">
@@ -491,17 +497,17 @@
             </div>
 
             <div class="wa-topics" id="waTopics">
-              <button type="button" class="wa-topic is-active" data-wa-msg="Hola Max de Ckekea, quiero ver los planes Estándar, Pro y Gold.">1. Ver Planes</button>
+              <button type="button" class="wa-topic is-active" data-wa-msg="Hola Max de SINKR∞, quiero ver los planes Estándar, Pro y Gold.">1. Ver Planes</button>
               <button type="button" class="wa-topic" data-wa-msg="Hola Max, quiero probar la demo interactiva de venta.">2. Demo de Venta</button>
-              <button type="button" class="wa-topic" data-wa-msg="Hola Max, quiero integrar Ckekea con mi sistema ERP (Saint / Profit / A2 / Valery).">3. Seguridad y ERP</button>
+              <button type="button" class="wa-topic" data-wa-msg="Hola Max, quiero integrar SINKR∞ con mi sistema ERP (Saint / Profit / A2 / Valery).">3. Seguridad y ERP</button>
               <button type="button" class="wa-topic" data-wa-msg="Hola Max, quiero hacer el diagnóstico rápido para mi negocio.">4. Diagnóstico Rápido</button>
-              <button type="button" class="wa-topic" data-wa-msg="Hola equipo Ckekea, ya realicé mi Pago Móvil a Mercantil (0424-6003606) y quiero validar mi referencia.">Enviar Comprobante</button>
+              <button type="button" class="wa-topic" data-wa-msg="Hola equipo SINKR∞, ya realicé mi Pago Móvil a Mercantil (0424-6003606) y quiero validar mi referencia.">Enviar Comprobante</button>
             </div>
 
             <form id="whatsappDirectForm" class="wa-form">
               <div class="field-light">
                 <label for="waCustomMessage">Tu mensaje para WhatsApp</label>
-                <textarea id="waCustomMessage" rows="3" required>Hola Max de Ckekea, quiero ver los planes Estándar, Pro y Gold.</textarea>
+                <textarea id="waCustomMessage" rows="3" required>Hola Max de SINKR∞, quiero ver los planes Estándar, Pro y Gold.</textarea>
               </div>
               <button type="submit" class="btn btn--whatsapp btn--full btn--lg" id="waSubmitBtn">
                 Abrir WhatsApp con Max (${BASE.bot.whatsappNumberDisplay})
