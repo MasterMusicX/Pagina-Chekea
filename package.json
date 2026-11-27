@@ -1,7 +1,7 @@
 {
-  "name": "ckekea-standalone-platform",
-  "version": "3.1.0",
-  "description": "Ckekea Standalone Platform: Web + Auth Neon PostgreSQL + Superadmin + Bank API + Native Baileys WhatsApp Bot",
+  "name": "sinkroo-standalone-platform",
+  "version": "3.2.0",
+  "description": "SINKR∞ Standalone Platform: Web + Auth Neon PostgreSQL + Superadmin + Excel/PDF Inventory + Bank API + Native Baileys WhatsApp Bot",
   "main": "server/server.js",
   "engines": {
     "node": ">=18.0.0"
@@ -17,8 +17,10 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^8.5.1",
     "node-fetch": "^2.7.0",
+    "pdf-parse": "^1.1.1",
     "pg": "8.11.3",
     "pino": "^9.6.0",
-    "qrcode": "^1.5.3"
+    "qrcode": "^1.5.3",
+    "xlsx": "^0.18.5"
   }
 }

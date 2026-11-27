@@ -41,14 +41,15 @@
         "ckekea_active_client_access_v3",
         JSON.stringify({
           tenantId: client.tenantId,
-          customerName: client.businessName || client.fullName,
+          role: client.role || "USER",
+          customerName: (client.businessName || client.fullName || "").replace(/ckekea|chekea/gi, "SINKR∞"),
           customerEmail: client.email,
           customerPhone: client.whatsappPhone || client.phone || "",
           businessType: client.businessType || "RETAIL",
-          planId: (client.planTier || "PRO").toLowerCase(),
+          planId: client.role === "SUPERADMIN" ? "admin" : (client.planTier || "PRO").toLowerCase(),
           planEnum: client.planTier === "ESTANDAR" ? "LITE" : "PRO",
-          clientBotPlan: client.planTier || "PRO",
-          planName: client.planTier || "PRO",
+          clientBotPlan: client.role === "SUPERADMIN" ? "ADMIN" : client.planTier || "PRO",
+          planName: client.role === "SUPERADMIN" ? "ADMIN" : client.planTier || "PRO",
           apiKey: client.apiKey,
           unlockedAt: new Date().toISOString()
         })
@@ -249,13 +250,34 @@
 
     function hydrateClientUI(client, stats) {
       currentClient = client;
-      document.getElementById("dashBusinessTitle").textContent = `${client.businessName} — Panel de Control`;
-      document.getElementById("dashUserSubtitle").textContent = `Hola, ${client.fullName} (${client.email}) · Tenant: ${client.tenantId}`;
-      document.getElementById("dashPlanBadge").textContent = `PLAN ${client.planTier}`;
-      document.getElementById("dashPayBadge").textContent =
-        client.paymentStatus === "PAID" ? `PAGADO (Ref ${client.paymentReference || "Verificado"})` : "MODO PRUEBA";
+      const isAdmin = client.role === "SUPERADMIN";
+      const cleanBiz = String(client.businessName || "").replace(/ckekea|chekea/gi, "SINKR∞");
+      document.getElementById("dashBusinessTitle").textContent = `${cleanBiz} — Panel de Control`;
+      document.getElementById("dashUserSubtitle").textContent = `Hola, ${client.fullName} (${client.email})`;
+
+      const planBadge = document.getElementById("dashPlanBadge");
+      const payBadge = document.getElementById("dashPayBadge");
       const superBtn = document.getElementById("dashSuperadminBtn");
-      if (superBtn) superBtn.hidden = client.role !== "SUPERADMIN";
+      const upgradeBtn = document.getElementById("dashUpgradePlanBtn");
+
+      if (isAdmin) {
+        if (planBadge) planBadge.textContent = "ACCESO ADMIN";
+        if (payBadge) payBadge.hidden = true;
+        if (superBtn) superBtn.hidden = false;
+        if (upgradeBtn) upgradeBtn.hidden = true;
+      } else {
+        if (planBadge) planBadge.textContent = `PLAN ${client.planTier}`;
+        if (payBadge) {
+          payBadge.hidden = false;
+          payBadge.textContent =
+            client.paymentStatus === "PAID" ? `PAGADO (Ref ${client.paymentReference || "Verificado"})` : "MODO PRUEBA";
+        }
+        if (superBtn) superBtn.hidden = true;
+        if (upgradeBtn) upgradeBtn.hidden = false;
+        // Garantizar que un usuario común nunca vea ningún enlace al Panel Admin en el menú
+        document.querySelectorAll('a[href="admin.html"]').forEach((el) => el.remove());
+      }
+
       document.getElementById("kpiApiKeyPreview").textContent = `${client.apiKey.slice(0, 14)}•••${client.apiKey.slice(-4)}`;
       document.getElementById("dashTestBotTitle").textContent = `Probar a ${client.botName || "Max"} con tu Inventario`;
 
@@ -513,12 +535,38 @@
     const invDrop = document.getElementById("invDropzone");
     document.getElementById("invBrowseBtn").addEventListener("click", () => invInput.click());
 
+    function readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("No se pudo leer el archivo seleccionado."));
+        reader.readAsDataURL(file);
+      });
+    }
+
     async function handleInvFile(file) {
       if (!file) return;
-      const text = await file.text();
+      const lower = file.name.toLowerCase();
       try {
+        if (lower.endsWith(".xlsx") || lower.endsWith(".xls") || lower.endsWith(".pdf")) {
+          toast(`Procesando ${lower.endsWith(".pdf") ? "PDF" : "Excel"} (${file.name})...`);
+          const fileBase64 = await readFileAsBase64(file);
+          const res = await apiRequest("/api/inventory/upload-file", {
+            method: "POST",
+            body: JSON.stringify({
+              filename: file.name,
+              mimeType: file.type || "",
+              fileBase64
+            })
+          });
+          toast(res.message || `${res.imported} productos importados`);
+          await loadInventory();
+          return;
+        }
+
+        const text = await file.text();
         let payload;
-        if (file.name.toLowerCase().endsWith(".json")) {
+        if (lower.endsWith(".json")) {
           const parsed = JSON.parse(text);
           payload = { items: Array.isArray(parsed) ? parsed : parsed.items || [] };
         } else {
@@ -532,6 +580,8 @@
         await loadInventory();
       } catch (err) {
         toast("Error importando archivo: " + err.message);
+      } finally {
+        if (invInput) invInput.value = "";
       }
     }
 

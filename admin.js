@@ -17,6 +17,23 @@
 
   if ((document.body.getAttribute("data-page") || "").toLowerCase() !== "admin") return;
 
+  // Bloqueo inmediato en cliente: usuarios comunes nunca pueden abrir admin.html
+  (function guardAdminRoute() {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) {
+      window.location.replace("login.html");
+      return;
+    }
+    try {
+      const u = JSON.parse(localStorage.getItem(AUTH_USER_KEY) || "null");
+      if (!u || u.role !== "SUPERADMIN") {
+        window.location.replace("dashboard.html");
+      }
+    } catch {
+      window.location.replace("dashboard.html");
+    }
+  })();
+
   function getApiOrigin() {
     const cfg = window.CHEKEA_CONFIG && window.CHEKEA_CONFIG.platform;
     const savedOverride = localStorage.getItem("ckekea_platform_api_url");
@@ -111,7 +128,7 @@
         return `
           <g class="svg-bar-row">
             <text x="0" y="${y + 15}" fill="#1d1d1f" font-size="12" font-weight="600">${esc(shortName)}</text>
-            <text x="0" y="${y + 29}" fill="#86868b" font-size="10">${esc(c.planTier)} · ${c.productCount} prod.</text>
+            <text x="0" y="${y + 29}" fill="#86868b" font-size="10">${c.role === "SUPERADMIN" ? "Admin" : esc(c.planTier)} · ${c.productCount} prod.</text>
 
             <rect x="${labelW}" y="${y + 3}" width="${apiW}" height="12" rx="6" fill="#0071e3">
               <title>${esc(c.businessName)} — API: ${c.apiCalls}</title>
@@ -254,11 +271,15 @@
             <span class="dash-pill ${u.role === "SUPERADMIN" ? "dash-pill--super" : "dash-pill--pay-light"}">${esc(u.role)}</span>
           </td>
           <td>
-            <select class="inline-select" data-adm-plan="${esc(u.id)}">
-              <option value="ESTANDAR"${u.planTier === "ESTANDAR" ? " selected" : ""}>Estándar</option>
-              <option value="PRO"${u.planTier === "PRO" ? " selected" : ""}>Pro</option>
-              <option value="GOLD"${u.planTier === "GOLD" ? " selected" : ""}>Gold</option>
-            </select>
+            ${
+              u.role === "SUPERADMIN"
+                ? '<span class="dash-pill dash-pill--admin-access">Sin Plan · Acceso Total</span>'
+                : `<select class="inline-select" data-adm-plan="${esc(u.id)}">
+                    <option value="ESTANDAR"${u.planTier === "ESTANDAR" ? " selected" : ""}>Estándar</option>
+                    <option value="PRO"${u.planTier === "PRO" ? " selected" : ""}>Pro</option>
+                    <option value="GOLD"${u.planTier === "GOLD" ? " selected" : ""}>Gold</option>
+                  </select>`
+            }
           </td>
           <td>
             <strong>${u.apiCalls}</strong> API · <strong>${u.chatbotMsgs}</strong> Bot<br />
@@ -410,9 +431,9 @@
             email: document.getElementById("admSuperEmail").value.trim(),
             phone: document.getElementById("admSuperPhone").value.trim(),
             role: "SUPERADMIN",
-            planTier: "GOLD",
+            planTier: "ADMIN",
             businessType: "TECH",
-            paymentStatus: "PAID",
+            paymentStatus: "ADMIN",
             password,
             confirmPassword
           })

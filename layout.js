@@ -39,7 +39,7 @@
   const PRIVATE_NAV_ITEMS = [
     { key: "dashboard", href: "dashboard.html", label: "Dashboard Principal" }
   ];
-  if (isSuperadmin || currentPage === "admin") {
+  if (isSuperadmin) {
     PRIVATE_NAV_ITEMS.push({ key: "admin", href: "admin.html", label: "Panel Admin" });
   }
 

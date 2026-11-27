@@ -343,14 +343,17 @@ async function ensureMainBranch(clientDb, tenantId) {
 
 async function createAccountInDb(db, opts) {
   const normalizedEmail = String(opts.email).trim().toLowerCase();
-  const safePlanTier = ["ESTANDAR", "PRO", "GOLD"].includes(String(opts.planTier || "PRO").toUpperCase())
-    ? String(opts.planTier || "PRO").toUpperCase()
-    : "PRO";
+  const safeRole = String(opts.role || "USER").toUpperCase() === "SUPERADMIN" ? "SUPERADMIN" : "USER";
+  const safePlanTier =
+    safeRole === "SUPERADMIN"
+      ? "ADMIN"
+      : ["ESTANDAR", "PRO", "GOLD"].includes(String(opts.planTier || "PRO").toUpperCase())
+        ? String(opts.planTier || "PRO").toUpperCase()
+        : "PRO";
   const prismaPlan = safePlanTier === "ESTANDAR" ? "LITE" : "PRO";
   const safeRubro = ["RETAIL", "PHARMACY", "TECH", "HARDWARE"].includes(String(opts.businessType || "RETAIL").toUpperCase())
     ? String(opts.businessType || "RETAIL").toUpperCase()
     : "RETAIL";
-  const safeRole = String(opts.role || "USER").toUpperCase() === "SUPERADMIN" ? "SUPERADMIN" : "USER";
   const cleanPhone = String(opts.phone || "").replace(/\D/g, "") || null;
 
   const passwordHash = await hashPassword(String(opts.password));
@@ -405,7 +408,7 @@ async function createAccountInDb(db, opts) {
       passwordHash,
       safeRole,
       safePlanTier,
-      opts.paymentStatus || (safeRole === "SUPERADMIN" ? "PAID" : "TRIAL"),
+      safeRole === "SUPERADMIN" ? "ADMIN" : opts.paymentStatus || "TRIAL",
       cleanPhone,
       apiKey
     ]
@@ -494,8 +497,8 @@ async function ensureSchemaAndSeed() {
         phone: "584246003606",
         password: INITIAL_SUPERADMIN_PASS,
         role: "SUPERADMIN",
-        planTier: "GOLD",
-        paymentStatus: "PAID"
+        planTier: "ADMIN",
+        paymentStatus: "ADMIN"
       });
       await db.query("COMMIT");
       console.log(`[Seed] Superadmin listo en Neon: ${INITIAL_SUPERADMIN_EMAIL}`);
@@ -506,10 +509,29 @@ async function ensureSchemaAndSeed() {
       db.release();
     }
   } else if (existingAdmin.rows[0].role !== "SUPERADMIN") {
-    await pool.query(`UPDATE web_clients SET role = 'SUPERADMIN', is_active = true WHERE id = $1`, [
+    await pool.query(`UPDATE web_clients SET role = 'SUPERADMIN', plan_tier = 'ADMIN', payment_status = 'ADMIN', is_active = true WHERE id = $1`, [
       existingAdmin.rows[0].id
     ]);
   }
+
+  // Migración limpia: renombrar registros antiguos de Ckekea -> SINKR∞ y quitar planes a Superadmins
+  await pool
+    .query(`
+      UPDATE web_clients
+      SET business_name = REGEXP_REPLACE(business_name, 'ckekea|chekea', 'SINKR∞', 'gi'), updated_at = NOW()
+      WHERE business_name ~* 'ckekea|chekea';
+
+      UPDATE tenants
+      SET name = REGEXP_REPLACE(name, 'ckekea|chekea', 'SINKR∞', 'gi'),
+          bot_signature = REGEXP_REPLACE(COALESCE(bot_signature, ''), 'ckekea|chekea', 'SINKR∞', 'gi'),
+          updated_at = NOW()
+      WHERE name ~* 'ckekea|chekea' OR COALESCE(bot_signature, '') ~* 'ckekea|chekea';
+
+      UPDATE web_clients
+      SET plan_tier = 'ADMIN', payment_status = 'ADMIN', updated_at = NOW()
+      WHERE role = 'SUPERADMIN' AND (plan_tier <> 'ADMIN' OR payment_status <> 'ADMIN');
+    `)
+    .catch((err) => console.warn("[Migration SINKR∞]", err.message));
 
   dbReady = true;
   dbLastError = null;
@@ -674,7 +696,7 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: "6mb" }));
+app.use(express.json({ limit: "16mb" }));
 
 function requireDb(req, res, next) {
   if (!pool || !dbReady) {
@@ -1182,12 +1204,296 @@ async function upsertProductsForTenant(tenantId, items) {
   }
 }
 
+function normalizeHeaderKey(str) {
+  return String(str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function parseNumericPrice(val) {
+  if (typeof val === "number") return Number.isFinite(val) ? val : NaN;
+  const cleaned = String(val || "")
+    .replace(/[^0-9.,-]/g, "")
+    .trim();
+  if (!cleaned) return NaN;
+  // Si trae coma y punto, decidir cuál es decimal
+  if (cleaned.includes(",") && cleaned.includes(".")) {
+    if (cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")) {
+      return Number(cleaned.replace(/\./g, "").replace(",", "."));
+    }
+    return Number(cleaned.replace(/,/g, ""));
+  }
+  if (cleaned.includes(",")) {
+    const parts = cleaned.split(",");
+    if (parts[parts.length - 1].length <= 2) {
+      return Number(cleaned.replace(",", "."));
+    }
+    return Number(cleaned.replace(/,/g, ""));
+  }
+  return Number(cleaned);
+}
+
+function mapObjectRowToProduct(rawObj) {
+  if (!rawObj || typeof rawObj !== "object") return null;
+  const norm = {};
+  Object.keys(rawObj).forEach((k) => {
+    norm[normalizeHeaderKey(k)] = rawObj[k];
+  });
+
+  const pick = (keys) => {
+    for (let i = 0; i < keys.length; i++) {
+      const v = norm[keys[i]];
+      if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+    }
+    return "";
+  };
+
+  const name = pick([
+    "nombre", "producto", "articulo", "descripcion", "item", "name", "product", "title", "nombreproducto", "descripcionproducto"
+  ]);
+  const priceRaw = pick([
+    "precio", "price", "preciousd", "pvp", "valor", "costo", "monto", "preciounitario", "unitprice", "preciooferta"
+  ]);
+  const price = parseNumericPrice(priceRaw);
+  if (!name || !Number.isFinite(price) || price <= 0) return null;
+
+  const qtyRaw = pick(["stock", "cantidad", "existencia", "existencias", "qty", "quantity", "disponible", "unidades", "inventario"]);
+  const parsedQty = parseInt(String(qtyRaw).replace(/\D/g, ""), 10);
+
+  return {
+    sku: pick(["sku", "codigo", "cod", "ref", "referencia", "id", "codigoproducto"]),
+    name,
+    price,
+    quantity: Number.isFinite(parsedQty) ? parsedQty : 10,
+    activeIngredient: pick(["categoria", "category", "linea", "principio", "principioactivo", "rubro", "departamento", "grupo"]) || "GENERAL",
+    presentation: pick(["presentacion", "presentation", "empaque", "unidad", "formato", "medida"]) || "Unidad",
+    laboratory: pick(["marca", "laboratorio", "laboratory", "brand", "fabricante", "proveedor"]) || "Catálogo Cliente"
+  };
+}
+
+function parseExcelBuffer(buffer) {
+  let XLSX;
+  try {
+    XLSX = require("xlsx");
+  } catch (err) {
+    throw new Error("Dependencia xlsx no instalada aún. Ejecuta npm install.");
+  }
+  const wb = XLSX.read(buffer, { type: "buffer" });
+  const sheetName = (wb.SheetNames || []).find((n) => wb.Sheets[n]);
+  if (!sheetName) return [];
+  const ws = wb.Sheets[sheetName];
+
+  // 1) Intento estándar con encabezados en la primera fila
+  const directRows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+  const directItems = directRows.map(mapObjectRowToProduct).filter(Boolean);
+  if (directItems.length > 0) return directItems;
+
+  // 2) Fallback: buscar fila de encabezado en las primeras 10 filas (para archivos con título arriba)
+  const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+  let headerIdx = -1;
+  for (let r = 0; r < Math.min(10, matrix.length); r++) {
+    const joined = matrix[r].map(normalizeHeaderKey).join(" ");
+    if (/(nombre|producto|articulo|descripcion|name)/.test(joined) && /(precio|price|pvp|valor|costo)/.test(joined)) {
+      headerIdx = r;
+      break;
+    }
+  }
+  if (headerIdx >= 0) {
+    const headers = matrix[headerIdx].map((h) => String(h || "").trim());
+    const items = [];
+    for (let r = headerIdx + 1; r < matrix.length; r++) {
+      const row = matrix[r];
+      if (!row || !row.length) continue;
+      const obj = {};
+      for (let c = 0; c < headers.length; c++) {
+        if (headers[c]) obj[headers[c]] = row[c];
+      }
+      const mapped = mapObjectRowToProduct(obj);
+      if (mapped) items.push(mapped);
+    }
+    if (items.length > 0) return items;
+  }
+
+  // 3) Fallback posicional (sku, nombre, precio, stock) o (nombre, precio, stock)
+  const fallback = [];
+  for (let r = 0; r < matrix.length; r++) {
+    const cols = (matrix[r] || []).map((c) => String(c || "").trim()).filter(Boolean);
+    if (cols.length < 2) continue;
+    const p2 = parseNumericPrice(cols[2]);
+    const p1 = parseNumericPrice(cols[1]);
+    if (cols.length >= 3 && Number.isFinite(p2) && p2 > 0) {
+      fallback.push({
+        sku: cols[0],
+        name: cols[1],
+        price: p2,
+        quantity: parseInt(cols[3] || "10", 10) || 10,
+        activeIngredient: cols[4] || "GENERAL",
+        presentation: cols[5] || "Unidad",
+        laboratory: cols[6] || "Catálogo Cliente"
+      });
+    } else if (Number.isFinite(p1) && p1 > 0 && cols[0].length > 2) {
+      fallback.push({
+        sku: "",
+        name: cols[0],
+        price: p1,
+        quantity: parseInt(cols[2] || "10", 10) || 10,
+        activeIngredient: "GENERAL",
+        presentation: "Unidad",
+        laboratory: "Catálogo Cliente"
+      });
+    }
+  }
+  return fallback;
+}
+
+function parsePdfLinesHeuristic(text) {
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\s+/g, " ").trim())
+    .filter((l) => l.length >= 5);
+
+  const items = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^(sku|codigo|código|producto|nombre|descripcion|descripción|lista de precios|pagina|página|total)/i.test(line)) {
+      continue;
+    }
+
+    // Formato delimitado por | o ; o tab
+    if (line.includes("|") || line.includes(";")) {
+      const sep = line.includes("|") ? "|" : ";";
+      const cols = line.split(sep).map((c) => c.trim()).filter(Boolean);
+      if (cols.length >= 2) {
+        const p2 = cols[2] ? parseNumericPrice(cols[2]) : NaN;
+        const p1 = parseNumericPrice(cols[1]);
+        if (Number.isFinite(p2) && p2 > 0) {
+          items.push({
+            sku: cols[0],
+            name: cols[1],
+            price: p2,
+            quantity: parseInt(cols[3] || "10", 10) || 10,
+            activeIngredient: cols[4] || "GENERAL",
+            presentation: cols[5] || "Unidad"
+          });
+          continue;
+        }
+        if (Number.isFinite(p1) && p1 > 0) {
+          items.push({
+            sku: "",
+            name: cols[0],
+            price: p1,
+            quantity: parseInt(cols[2] || "10", 10) || 10,
+            activeIngredient: "GENERAL",
+            presentation: "Unidad"
+          });
+          continue;
+        }
+      }
+    }
+
+    // Formato libre típico de catálogos PDF: "[SKU] Nombre del producto ... $12.50 [stock]"
+    const m = line.match(/^(?:([A-Z0-9_-]{3,14})\s+)?(.{3,90}?)\s+(?:USD|\$|US\$)?\s*([0-9]+(?:[.,][0-9]{1,2})?)\s*(?:USD|\$)?(?:\s+(?:stock|cant|qty|disp)?[:.]?\s*([0-9]{1,6}))?$/i);
+    if (m) {
+      const possibleSku = m[1] && /[0-9]/.test(m[1]) ? m[1] : "";
+      const rawName = (possibleSku ? m[2] : (m[1] ? m[1] + " " + m[2] : m[2])).replace(/[\.\-–—]+$/g, "").trim();
+      const price = parseNumericPrice(m[3]);
+      const qty = m[4] ? parseInt(m[4], 10) : 10;
+      if (rawName.length >= 3 && !/^[0-9\s.,/-]+$/.test(rawName) && Number.isFinite(price) && price > 0 && price < 1000000) {
+        items.push({
+          sku: possibleSku,
+          name: rawName,
+          price,
+          quantity: Number.isFinite(qty) ? qty : 10,
+          activeIngredient: "GENERAL",
+          presentation: "Unidad",
+          laboratory: "Catálogo PDF"
+        });
+      }
+    }
+  }
+  return items;
+}
+
+async function parsePdfBuffer(buffer) {
+  let pdfParse;
+  try {
+    pdfParse = require("pdf-parse");
+  } catch (err) {
+    throw new Error("Dependencia pdf-parse no instalada aún. Ejecuta npm install.");
+  }
+  const parsed = await pdfParse(buffer);
+  const text = (parsed && parsed.text) || "";
+  const heuristic = parsePdfLinesHeuristic(text);
+  if (heuristic.length >= 2 || !OPENROUTER_API_KEY || text.trim().length < 20) {
+    return heuristic;
+  }
+
+  // Fallback inteligente con IA si el PDF tiene formato complejo
+  const aiRes = await safeJsonFetch(OPENROUTER_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
+      "X-Title": "SINKROO-PDF-Parser"
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      temperature: 0,
+      max_tokens: 1800,
+      messages: [
+        {
+          role: "system",
+          content:
+            'Extrae los productos del texto de un catálogo/inventario PDF y devuelve SOLO un JSON array válido con objetos {"sku":"","name":"","price":0,"quantity":10,"category":"GENERAL","presentation":"Unidad","brand":""}. Sin markdown ni texto extra.'
+        },
+        { role: "user", content: text.slice(0, 6000) }
+      ]
+    })
+  });
+  try {
+    const raw =
+      aiRes.ok &&
+      aiRes.data &&
+      aiRes.data.choices &&
+      aiRes.data.choices[0] &&
+      aiRes.data.choices[0].message &&
+      aiRes.data.choices[0].message.content;
+    if (raw) {
+      const jsonMatch = raw.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const arr = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(arr)) {
+          const mapped = arr.map(mapObjectRowToProduct).filter(Boolean);
+          if (mapped.length > 0) return mapped;
+        }
+      }
+    }
+  } catch {
+    // retorna heurística si el JSON de IA falla
+  }
+  return heuristic;
+}
+
 function parseCsvInventory(csvText) {
   const lines = String(csvText || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (!lines.length) return [];
   const delimiter = lines[0].includes(";") ? ";" : ",";
   const firstCols = lines[0].toLowerCase();
   const hasHeader = firstCols.includes("sku") || firstCols.includes("nombre") || firstCols.includes("name") || firstCols.includes("precio");
+  if (hasHeader) {
+    const headers = lines[0].split(delimiter).map((c) => c.trim().replace(/^"|"$/g, ""));
+    const mapped = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(delimiter).map((c) => c.trim().replace(/^"|"$/g, ""));
+      const obj = {};
+      for (let j = 0; j < headers.length; j++) obj[headers[j]] = cols[j] || "";
+      const prod = mapObjectRowToProduct(obj);
+      if (prod) mapped.push(prod);
+    }
+    if (mapped.length > 0) return mapped;
+  }
   const items = [];
   for (let i = hasHeader ? 1 : 0; i < lines.length; i++) {
     const cols = lines[i].split(delimiter).map((c) => c.trim().replace(/^"|"$/g, ""));
@@ -1195,7 +1501,7 @@ function parseCsvInventory(csvText) {
     items.push({
       sku: cols[0],
       name: cols[1],
-      price: Number(String(cols[2]).replace(",", ".")),
+      price: parseNumericPrice(cols[2]),
       quantity: parseInt(cols[3] || "1", 10),
       activeIngredient: cols[4] || "GENERAL",
       presentation: cols[5] || "Unidad",
@@ -1245,14 +1551,88 @@ app.post("/api/inventory", requireAuth, async (req, res) => {
 app.post(["/api/inventory/bulk", "/api/v1/stock/import"], requireAuth, async (req, res) => {
   try {
     const { items, csvText, rawText } = req.body || {};
-    let parsed = Array.isArray(items) ? items : [];
+    let parsed = Array.isArray(items) ? items.map((it) => mapObjectRowToProduct(it) || it) : [];
     if (!parsed.length && (csvText || rawText)) parsed = parseCsvInventory(csvText || rawText);
     if (!parsed.length) {
-      return res.status(400).json({ success: false, error: "Formato CSV esperado: sku,nombre,precio,stock,categoria,presentacion" });
+      return res.status(400).json({ success: false, error: "Formato esperado: sku,nombre,precio,stock,categoria,presentacion" });
     }
     const imported = await upsertProductsForTenant(req.client.tenant_id, parsed);
     recordUsage(req.client.tenant_id, "API_CALL", req.path, 0, 0);
     res.status(201).json({ success: true, imported, message: `${imported} productos guardados en Neon y asimilados por el Bot.` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Carga directa de inventario desde Excel (.xlsx / .xls), PDF (.pdf), CSV o JSON
+app.post("/api/inventory/upload-file", requireAuth, async (req, res) => {
+  try {
+    const { filename = "", fileBase64 = "" } = req.body || {};
+    if (!fileBase64) {
+      return res.status(400).json({ success: false, error: "No se recibió el archivo para procesar." });
+    }
+    const cleanB64 = String(fileBase64).includes(",") ? String(fileBase64).split(",").pop() : String(fileBase64);
+    const buffer = Buffer.from(cleanB64, "base64");
+    const lowerName = String(filename).toLowerCase();
+
+    let parsed = [];
+    let format = "FILE";
+
+    if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) {
+      format = "EXCEL";
+      parsed = parseExcelBuffer(buffer);
+    } else if (lowerName.endsWith(".pdf")) {
+      format = "PDF";
+      parsed = await parsePdfBuffer(buffer);
+    } else if (lowerName.endsWith(".json")) {
+      format = "JSON";
+      const obj = JSON.parse(buffer.toString("utf8"));
+      const arr = Array.isArray(obj) ? obj : obj.items || [];
+      parsed = arr.map((it) => mapObjectRowToProduct(it) || it).filter(Boolean);
+    } else {
+      format = "CSV";
+      parsed = parseCsvInventory(buffer.toString("utf8"));
+    }
+
+    if (!parsed.length) {
+      return res.status(400).json({
+        success: false,
+        error:
+          format === "PDF"
+            ? "No se detectaron productos con precio en el PDF. Asegúrate de que el PDF tenga texto seleccionable (nombre y precio)."
+            : "No se encontraron filas válidas con nombre y precio en el archivo."
+      });
+    }
+
+    const imported = await upsertProductsForTenant(req.client.tenant_id, parsed);
+    recordUsage(req.client.tenant_id, "API_CALL", "/api/inventory/upload-file", 0, 0);
+    res.status(201).json({
+      success: true,
+      format,
+      imported,
+      message: `${imported} productos importados desde ${format} y asimilados por tu Bot.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Error procesando archivo: " + err.message });
+  }
+});
+
+// Descarga de plantilla Excel (.xlsx) lista para llenar
+app.get("/api/inventory/template.xlsx", (_req, res) => {
+  try {
+    const XLSX = require("xlsx");
+    const rows = [
+      { sku: "PRO-001", nombre: "Acetaminofen 500mg", precio: 2.5, stock: 45, categoria: "ANALGESICO", presentacion: "Caja x 10 tabletas", marca: "Genfar" },
+      { sku: "PRO-002", nombre: "Vitamina C 1000mg", precio: 6.8, stock: 30, categoria: "VITAMINAS", presentacion: "Frasco x 30 tabletas", marca: "Now" },
+      { sku: "PRO-003", nombre: "Termometro Digital Infrarrojo", precio: 18.0, stock: 12, categoria: "EQUIPOS", presentacion: "Unidad", marca: "Omron" }
+    ];
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+    const outBuf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", 'attachment; filename="plantilla-inventario-sinkroo.xlsx"');
+    res.send(outBuf);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1554,12 +1934,15 @@ app.get("/api/admin/overview", requireAuth, requireSuperadmin, async (_req, res)
     const totals = companies.reduce(
       (acc, c) => {
         acc.totalUsers += 1;
-        if (c.role === "SUPERADMIN") acc.superadmins += 1;
+        if (c.role === "SUPERADMIN") {
+          acc.superadmins += 1;
+        } else if (["ESTANDAR", "PRO", "GOLD"].includes(c.planTier)) {
+          acc.plans[c.planTier] = (acc.plans[c.planTier] || 0) + 1;
+        }
         if (c.botEnabled && c.isActive) acc.activeBots += 1;
         acc.totalApiCalls += c.apiCalls;
         acc.totalChatbotMsgs += c.chatbotMsgs;
         acc.totalProducts += c.productCount;
-        acc.plans[c.planTier] = (acc.plans[c.planTier] || 0) + 1;
         return acc;
       },
       { totalUsers: 0, superadmins: 0, activeBots: 0, totalApiCalls: 0, totalChatbotMsgs: 0, totalProducts: 0, plans: { ESTANDAR: 0, PRO: 0, GOLD: 0 } }
@@ -1632,8 +2015,15 @@ app.patch("/api/admin/users/:id", requireAuth, requireSuperadmin, async (req, re
 
     const nextRole = role ? (String(role).toUpperCase() === "SUPERADMIN" ? "SUPERADMIN" : "USER") : target.role;
     const nextActive = typeof isActive === "boolean" ? isActive : target.is_active;
-    const nextPlan = planTier && ["ESTANDAR", "PRO", "GOLD"].includes(String(planTier).toUpperCase()) ? String(planTier).toUpperCase() : target.plan_tier;
-    const nextPay = paymentStatus ? String(paymentStatus).toUpperCase() : target.payment_status;
+    let nextPlan;
+    if (nextRole === "SUPERADMIN") {
+      nextPlan = "ADMIN";
+    } else if (planTier && ["ESTANDAR", "PRO", "GOLD"].includes(String(planTier).toUpperCase())) {
+      nextPlan = String(planTier).toUpperCase();
+    } else {
+      nextPlan = ["ESTANDAR", "PRO", "GOLD"].includes(target.plan_tier) ? target.plan_tier : "ESTANDAR";
+    }
+    const nextPay = nextRole === "SUPERADMIN" ? "ADMIN" : paymentStatus ? String(paymentStatus).toUpperCase() : target.payment_status;
     const nextBot = typeof botEnabled === "boolean" ? botEnabled : target.bot_enabled;
     const nextPassHash = newPassword && String(newPassword).length >= 6 ? await hashPassword(String(newPassword)) : target.password_hash;
 

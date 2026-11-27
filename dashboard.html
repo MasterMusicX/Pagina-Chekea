@@ -86,7 +86,7 @@
 
             <div class="dash-wa-layout">
               <div class="dash-qr-frame">
-                <img id="dashQrImg" src="" alt="Código QR WhatsApp" hidden />
+                <img id="dashQrImg" alt="Código QR WhatsApp" hidden />
                 <div class="dash-qr-empty" id="dashQrPlaceholder">
                   <strong>WhatsApp QR</strong>
                   <p>Escanea el código desde <em>WhatsApp → Dispositivos vinculados</em> cuando esté disponible.</p>
@@ -123,7 +123,7 @@
                 <span class="card-kicker">Identidad del Bot</span>
                 <h2>Configuración de tu Negocio</h2>
               </div>
-              <button type="button" class="btn btn--primary btn--xs" data-open-payment="pro">Activar / Mejorar Plan</button>
+              <button type="button" class="btn btn--primary btn--xs" id="dashUpgradePlanBtn" data-open-payment="pro">Activar / Mejorar Plan</button>
             </div>
 
             <form id="dashBotSettingsForm" class="dash-form">
@@ -179,17 +179,20 @@
                 <span class="card-kicker">Cerebro del Bot · Neon PostgreSQL</span>
                 <h2>Sube tu Inventario para que el Bot lo asimile</h2>
               </div>
-              <button type="button" class="btn btn--secondary btn--xs" id="downloadCsvTemplateBtn">Descargar Plantilla CSV</button>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <a href="/api/inventory/template.xlsx" class="btn btn--secondary btn--xs" id="downloadExcelTemplateBtn">Plantilla Excel (.xlsx)</a>
+                <button type="button" class="btn btn--secondary btn--xs" id="downloadCsvTemplateBtn">Plantilla CSV</button>
+              </div>
             </div>
 
-            <!-- Carga masiva CSV / JSON -->
+            <!-- Carga masiva Excel / PDF / CSV / JSON -->
             <div class="inv-dropzone" id="invDropzone">
-              <input type="file" id="invFileInput" accept=".csv,.json,text/csv,application/json" hidden />
+              <input type="file" id="invFileInput" accept=".xlsx,.xls,.pdf,.csv,.json,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json" hidden />
               <div>
-                <strong>Arrastra tu archivo CSV o JSON aquí</strong>
-                <p>Columnas CSV: <code>sku,nombre,precio,stock,categoria,presentacion,marca</code></p>
+                <strong>Arrastra tu archivo Excel (.xlsx), PDF, CSV o JSON aquí</strong>
+                <p>Acepta hojas de cálculo <code>.xlsx / .xls</code>, catálogos <code>.pdf</code> con precios, <code>.csv</code> o <code>.json</code>.</p>
               </div>
-              <button type="button" class="btn btn--primary btn--sm" id="invBrowseBtn">Subir archivo CSV / JSON</button>
+              <button type="button" class="btn btn--primary btn--sm" id="invBrowseBtn">Subir Excel / PDF / CSV</button>
             </div>
 
             <!-- Agregar producto individual -->

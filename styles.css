@@ -4333,6 +4333,15 @@ pre {
   }
 }
 
+[hidden] {
+  display: none !important;
+}
+
+.dash-pill--admin-access {
+  background: rgba(14, 149, 232, 0.14);
+  color: #0b5cab;
+}
+
 /* ============================================================================
    BRANDING SVG SINKR∞, VIDEO HERO Y SELECTOR DE IDIOMA ES / EN
    ============================================================================ */

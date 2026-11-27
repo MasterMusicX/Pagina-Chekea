@@ -58,10 +58,10 @@
           <div class="portal-card">
             <div class="portal-card__head">
               <div>
-                <span class="card-kicker">1. API SaaS (standalone-chatbot-api.ts)</span>
-                <h3 id="portalClientTitle">Credenciales Activas</h3>
+                <span class="card-kicker">1. Credenciales SINKR∞</span>
+                <h3 id="portalClientTitle">API Activa</h3>
               </div>
-              <span class="verified-chip" id="portalPlanBadge">PLAN PRO</span>
+              <span class="verified-chip" id="portalPlanBadge">ACTIVO</span>
             </div>
 
             <div class="portal-creds">
@@ -73,7 +73,7 @@
                 </div>
               </div>
               <div class="cred-row">
-                <span>Tenant ID / Rubro</span>
+                <span>Identificador / Rubro</span>
                 <div class="cred-row__val">
                   <code id="portalTenantMeta">—</code>
                 </div>
@@ -81,19 +81,19 @@
               <div class="cred-row">
                 <span>Endpoint Chatbot API</span>
                 <div class="cred-row__val">
-                  <code id="portalChatEndpointText">POST http://localhost:3000/api/v1/chatbot/message</code>
+                  <code id="portalChatEndpointText">POST /api/v1/chatbot/message</code>
                 </div>
               </div>
               <div class="cred-row">
                 <span>Endpoint Stock / Inventario</span>
                 <div class="cred-row__val">
-                  <code id="portalStockEndpointText">POST http://localhost:3000/api/v1/stock/import</code>
+                  <code id="portalStockEndpointText">POST /api/v1/stock/import</code>
                 </div>
               </div>
             </div>
 
             <div class="portal-card__footer">
-              <button type="button" class="btn btn--primary btn--sm" id="downloadClientEnvBtn">Descargar .env.client-bot</button>
+              <a href="dashboard.html" class="btn btn--primary btn--sm">Ir a mi Dashboard</a>
               <button type="button" class="btn btn--secondary btn--sm" id="loadConversationsBtn">Ver conversaciones API</button>
               <a href="api-studio.html" class="btn btn--glass btn--sm">Configurar en API Studio</a>
             </div>
@@ -103,32 +103,30 @@
           <div class="portal-card">
             <div class="portal-card__head">
               <div>
-                <span class="card-kicker">2. Bot Comercial WhatsApp (client-sales-bot.ts)</span>
-                <h3 id="botServiceTitle">Panel del Bot Comercial</h3>
+                <span class="card-kicker">2. Bot WhatsApp SINKR∞</span>
+                <h3 id="botServiceTitle">Panel del Bot WhatsApp</h3>
               </div>
               <span class="status-pill status-pill--active" id="botLiveStatusPill">Verificando...</span>
             </div>
 
             <div class="bot-live-grid">
               <div class="bot-live-info">
-                <p id="botLiveDesc">Sincroniza con tu instancia de <code>client-sales-bot.ts</code> para vincular WhatsApp, encender/apagar el bot y descargar tu Cierre Semanal en PDF.</p>
+                <p id="botLiveDesc">Administra tu bot de WhatsApp, sube tu inventario en Excel/PDF y escanea tu código QR directamente desde tu Dashboard.</p>
                 <div class="bot-kpis" id="botWeeklyKpis">
                   <div><strong id="kpiWeeklySold">$0.00</strong><span>Vendido semana</span></div>
                   <div><strong id="kpiWeeklyPaid">0</strong><span>Pagados</span></div>
                   <div><strong id="kpiWeeklyPending">0</strong><span>Pendientes</span></div>
                 </div>
                 <div class="portal-card__footer">
-                  <button type="button" class="btn btn--primary btn--sm" id="refreshBotStateBtn">Sincronizar Bot</button>
-                  <button type="button" class="btn btn--secondary btn--sm" id="toggleClientBotBtn">Encender / Apagar</button>
-                  <button type="button" class="btn btn--secondary btn--sm" id="downloadWeeklyPdfBtn">PDF Cierre Semanal</button>
-                  <a href="http://localhost:3001/qr" target="_blank" rel="noopener noreferrer" class="btn btn--whatsapp btn--sm" id="openBotPanelLink">Abrir Panel QR ›</a>
+                  <button type="button" class="btn btn--primary btn--sm" id="refreshBotStateBtn">Actualizar estado</button>
+                  <a href="dashboard.html" class="btn btn--whatsapp btn--sm" id="openBotPanelLink">Abrir Panel QR e Inventario ›</a>
                 </div>
               </div>
               <div class="bot-qr-box" id="botQrBox">
-                <img id="botQrImg" src="" alt="Código QR WhatsApp del Bot" hidden />
+                <img id="botQrImg" alt="Código QR WhatsApp del Bot" hidden />
                 <div class="bot-qr-placeholder" id="botQrPlaceholder">
                   <strong>WhatsApp QR</strong>
-                  <span>Pulsa "Sincronizar Bot" con <code>client-sales-bot.ts</code> activo para ver el QR aquí.</span>
+                  <span>Abre tu Dashboard para escanear el QR o solicitar un código de vinculación.</span>
                 </div>
               </div>
             </div>

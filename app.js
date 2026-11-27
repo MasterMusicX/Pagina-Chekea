@@ -372,11 +372,21 @@
 
     if (unlocked) {
       const a = state.activeAccess;
-      const planLabel = a.clientBotPlan || a.planName || a.planEnum || "PRO";
+      let storedUser = null;
+      try {
+        storedUser = JSON.parse(localStorage.getItem("ckekea_auth_user_v1") || "null");
+      } catch {
+        storedUser = null;
+      }
+      const isAdmin = Boolean((storedUser && storedUser.role === "SUPERADMIN") || a.role === "SUPERADMIN" || a.clientBotPlan === "ADMIN");
+      const cleanName = String(a.customerName || "SINKR∞").replace(/ckekea|chekea/gi, "SINKR∞");
+      const planLabel = isAdmin ? "ADMIN" : a.clientBotPlan || a.planName || a.planEnum || "PRO";
       pill.className = "access-pill access-pill--unlocked";
-      pill.innerHTML = `${svgCheck} Acceso Activo — Plan ${escapeHtml(planLabel)} Desbloqueado`;
+      pill.innerHTML = isAdmin
+        ? `${svgCheck} Acceso Activo — Modo Administrador`
+        : `${svgCheck} Acceso Activo — Plan ${escapeHtml(planLabel)} Desbloqueado`;
       if (meta) {
-        meta.innerHTML = `Sesión activa para <strong>${escapeHtml(a.customerName)}</strong> (${escapeHtml(a.businessType || "RETAIL")}). Puedes usar el motor web de Max, tu API SaaS (:3000) y tu Bot Comercial (:3001).`;
+        meta.innerHTML = `Sesión activa para <strong>${escapeHtml(cleanName)}</strong> (${escapeHtml(a.businessType || "RETAIL")}). Puedes usar el motor web de Max, tu API y tu Bot de WhatsApp.`;
       }
       if (primaryCta) primaryCta.hidden = true;
       if (openUnlockBtn) openUnlockBtn.hidden = true;
@@ -384,21 +394,21 @@
       if (portal) portal.hidden = false;
       if (lockBanner) lockBanner.hidden = true;
 
-      const chatUrl = joinUrl(state.apiConfig.baseUrl, state.apiConfig.chatEndpoint || "/api/v1/chatbot/message");
-      const stockUrl = joinUrl(state.apiConfig.baseUrl, state.apiConfig.stockSyncEndpoint || "/api/v1/stock/import");
-      const botQrUrl = joinUrl(state.apiConfig.clientBotBaseUrl, "/qr");
+      const effectiveBase =
+        state.apiConfig.baseUrl ||
+        (window.location.protocol === "http:" || window.location.protocol === "https:" ? window.location.origin : "");
+      const chatUrl = joinUrl(effectiveBase, state.apiConfig.chatEndpoint || "/api/v1/chatbot/message") || "/api/v1/chatbot/message";
+      const stockUrl = joinUrl(effectiveBase, state.apiConfig.stockSyncEndpoint || "/api/v1/stock/import") || "/api/v1/stock/import";
 
-      document.getElementById("portalClientTitle").textContent = `${a.customerName} — API Activa`;
-      document.getElementById("portalPlanBadge").textContent = `PLAN ${planLabel}`;
+      document.getElementById("portalClientTitle").textContent = `${cleanName} — API Activa`;
+      document.getElementById("portalPlanBadge").textContent = isAdmin ? "ACCESO ADMIN" : `PLAN ${planLabel}`;
       document.getElementById("portalApiKeyText").textContent = a.apiKey;
-      document.getElementById("portalTenantMeta").textContent = `${a.tenantId || "local-tenant"} · ${a.businessType || "RETAIL"}`;
+      document.getElementById("portalTenantMeta").textContent = `${a.tenantId || "tenant"} · ${a.businessType || "RETAIL"}`;
       document.getElementById("portalChatEndpointText").textContent = `POST ${chatUrl}`;
       document.getElementById("portalStockEndpointText").textContent = `POST ${stockUrl}`;
       const botLink = document.getElementById("openBotPanelLink");
       if (botLink) {
-        botLink.href = state.apiConfig.clientBotPanelToken
-          ? `${botQrUrl}?token=${encodeURIComponent(state.apiConfig.clientBotPanelToken)}`
-          : botQrUrl;
+        botLink.href = "dashboard.html";
       }
 
       updateChatStatusBadge();
@@ -428,62 +438,74 @@
   }
 
   async function syncClientBotState(silent) {
-    const botBase = state.apiConfig.clientBotBaseUrl;
     const statusPill = document.getElementById("botLiveStatusPill");
     const qrImg = document.getElementById("botQrImg");
     const qrPlaceholder = document.getElementById("botQrPlaceholder");
     const titleEl = document.getElementById("botServiceTitle");
     const descEl = document.getElementById("botLiveDesc");
 
-    if (!botBase || !statusPill) return;
+    if (!statusPill) return;
     if (!silent) statusPill.textContent = "Conectando...";
 
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
-      const res = await fetch(joinUrl(botBase, state.apiConfig.clientBotStateEndpoint || "/api/state"), {
-        headers: buildBotPanelHeaders(),
-        signal: controller.signal
-      });
-      clearTimeout(timer);
+    const apiOrigin =
+      window.location.protocol === "http:" || window.location.protocol === "https:"
+        ? window.location.origin
+        : (BASE.platform && BASE.platform.apiBaseUrl) || "";
+    const jwtToken = localStorage.getItem("ckekea_auth_jwt_v1");
 
+    try {
+      if (!apiOrigin || (!jwtToken && !(state.activeAccess && state.activeAccess.apiKey))) {
+        throw new Error("Inicia sesión en tu Dashboard para sincronizar el bot.");
+      }
+      const headers = { "Content-Type": "application/json" };
+      if (jwtToken) headers.Authorization = `Bearer ${jwtToken}`;
+      else if (state.activeAccess && state.activeAccess.apiKey) headers["X-API-Key"] = state.activeAccess.apiKey;
+
+      const res = await fetch(`${apiOrigin.replace(/\/+$/, "")}/api/bot/status`, { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (!json.success || !json.data) throw new Error("Respuesta inválida");
 
       const d = json.data;
-      if (titleEl) titleEl.textContent = `${d.botName} — ${d.businessName} (Plan ${d.plan})`;
-      statusPill.className = `status-pill ${d.botActive ? "status-pill--active" : "status-pill--revoked"}`;
-      statusPill.textContent = `${d.botActive ? "Bot ON" : "Bot OFF"} · WA: ${d.waStatus}`;
+      if (titleEl) titleEl.textContent = `${d.botName || "Max"} — Bot WhatsApp SINKR∞`;
+      statusPill.className = `status-pill ${d.botEnabled ? "status-pill--active" : "status-pill--revoked"}`;
+      statusPill.textContent = `${d.botEnabled ? "Bot ON" : "Bot OFF"} · WA: ${d.waStatus || "LISTO"}`;
       if (descEl) {
-        descEl.textContent = `Conectado en vivo a ${botBase}. Período semanal: ${d.weekly.periodStart} al ${d.weekly.periodEnd}.`;
+        descEl.textContent = "Conectado al motor WhatsApp independiente de SINKR∞. Administra tu inventario y el QR completo desde tu Dashboard.";
       }
-      document.getElementById("kpiWeeklySold").textContent = `$${Number(d.weekly.totalSold || 0).toFixed(2)}`;
-      document.getElementById("kpiWeeklyPaid").textContent = String(d.weekly.paidCount || 0);
-      document.getElementById("kpiWeeklyPending").textContent = String(d.weekly.pendingCount || 0);
 
       if (d.qrBase64 && d.waStatus !== "READY") {
         qrImg.src = d.qrBase64;
         qrImg.hidden = false;
         qrPlaceholder.hidden = true;
       } else if (d.waStatus === "READY") {
+        qrImg.removeAttribute("src");
         qrImg.hidden = true;
         qrPlaceholder.hidden = false;
-        qrPlaceholder.innerHTML = `<strong>WhatsApp Conectado</strong><span>El bot está atendiendo clientes en vivo.</span>`;
+        qrPlaceholder.innerHTML = `<strong>WhatsApp Conectado</strong><span>Tu bot está atendiendo clientes en vivo.</span>`;
       } else {
+        qrImg.removeAttribute("src");
         qrImg.hidden = true;
         qrPlaceholder.hidden = false;
-        qrPlaceholder.innerHTML = `<strong>Estado: ${escapeHtml(d.waStatus)}</strong><span>Abre el Panel QR o espera unos segundos mientras inicializa.</span>`;
+        qrPlaceholder.innerHTML = `<strong>Estado: ${escapeHtml(d.waStatus || "Iniciando")}</strong><span>Abre tu Dashboard para generar el QR o código de vinculación.</span>`;
       }
 
-      if (!silent) showToast("Bot Comercial sincronizado en vivo");
+      if (!silent) showToast("Estado del Bot sincronizado en vivo");
     } catch (err) {
-      statusPill.className = "status-pill status-pill--revoked";
-      statusPill.textContent = "Bot Offline (:3001)";
-      if (descEl) {
-        descEl.innerHTML = `No se detectó <code>client-sales-bot.ts</code> en <code>${escapeHtml(botBase)}</code> (${escapeHtml(err.message)}). Inicia tu servidor con <code>npm run dev:client-bot</code> y pulsa <strong>Sincronizar Bot</strong>.`;
+      statusPill.className = "status-pill status-pill--active";
+      statusPill.textContent = "Disponible en Dashboard";
+      if (qrImg) {
+        qrImg.removeAttribute("src");
+        qrImg.hidden = true;
       }
-      if (!silent) showToast("No se pudo conectar al Bot Comercial en " + botBase);
+      if (qrPlaceholder) {
+        qrPlaceholder.hidden = false;
+        qrPlaceholder.innerHTML = `<strong>WhatsApp QR</strong><span>Abre tu Dashboard para vincular tu número de WhatsApp y cargar tu inventario.</span>`;
+      }
+      if (descEl) {
+        descEl.textContent = "Inicia sesión en tu Dashboard SINKR∞ para ver el código QR en tiempo real, subir tu Excel/PDF y encender o apagar tu bot.";
+      }
+      if (!silent) showToast("Abre tu Dashboard para controlar el Bot en vivo");
     }
   }
 
